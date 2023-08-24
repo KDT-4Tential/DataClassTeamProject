@@ -1,11 +1,10 @@
 package com.example.dataclassteamproject
 
-import android.content.ContentValues.TAG
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -44,77 +45,187 @@ import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.database.ktx.getValue
-import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+
+
+
             DataClassTeamProjectTheme {
 
-                val database = Firebase.database
-                val myRef = database.getReference("message")
-
-                myRef.setValue("Hello, World!")
-
-                // Read from the database
-                myRef.addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        // This method is called once with the initial value and again
-                        // whenever data at this location is updated.
-                        val value = dataSnapshot.getValue<String>()
-                        Log.d(TAG, "Value is: $value")
-                    }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        // Failed to read value
-                        Log.w(TAG, "Failed to read value.", error.toException())
-                    }
-                })
-
-
+//                getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+//                val database = Firebase.database
+//                val myRef = database.getReference("test")
 //
-//                val navController = rememberNavController()
+//                myRef.setValue("Hello, World!")
 //
-//                NavHost(navController = navController, startDestination = "home") {
-//                    composable("home") {
-//                        HomeScreen(navController)
+//                // Read from the database
+//                myRef.addValueEventListener(object : ValueEventListener {
+//                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+//                        // This method is called once with the initial value and again
+//                        // whenever data at this location is updated.
+//                        val value = dataSnapshot.getValue<String>()
+//                        Log.d(TAG, "Value is: $value")
 //                    }
-//                    composable("dm") {
-//                        DmScreen(navController)
+//
+//                    override fun onCancelled(error: DatabaseError) {
+//                        // Failed to read value
+//                        Log.w(TAG, "Failed to read value.", error.toException())
 //                    }
-//                    composable("schedule") {
-//                        ScheduleScreen(navController)
-//                    }
-//                    composable("personal") {
-//                        PersonalInfoScreen(navController)
-//                    }
-//                    composable("boardview") {
-//                        //여기에 보드뷰 스크린을 넣어주세요
-//                    }
+//                })
+
+
+                val navController = rememberNavController()
+
+                NavHost(navController = navController, startDestination = "chatting") {
+                    composable("home") {
+                        HomeScreen(navController)
+                    }
+                    composable("dm") {
+                        DmScreen(navController)
+                    }
+                    composable("schedule") {
+                        ScheduleScreen(navController)
+                    }
+                    composable("personal") {
+                        PersonalInfoScreen(navController)
+                    }
+                    composable("boardview") {
+                        //여기에 보드뷰 스크린을 넣어주세요
+                    }
+                    composable("chatting") {
+                        var chatmessage by remember { mutableStateOf("") }
+                        var chatMessages by remember { mutableStateOf(listOf<String>()) }
+
+
+                        loadChatMessages { messages ->
+                            chatMessages = messages
+                        }
+                        Scaffold(topBar = {
+                            TopAppBar(
+                                title = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Button(onClick = { /*TODO*/ }) {
+                                            Text(text = "back")
+                                        }
+                                        Text(text = "채팅방", modifier = Modifier.weight(1f))
+                                        Button(onClick = { /*TODO*/ }) {
+                                            Text(text = "검색")
+                                        }
+                                    }
+                                },
+                                //탑바 색바꾸기
+                                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+                            )
+                        }, bottomBar = {
+                            BottomAppBar(
+                                containerColor = Color.Gray
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Button(onClick = { /*TODO*/ }) {
+                                        Text(text = "+")
+                                    }
+                                    TextField(value = chatmessage, onValueChange = { chatmessage = it })
+                                    Button(onClick = {
+                                        if (chatmessage.isNotEmpty()) {
+                                            chatMessages += chatmessage
+                                            saveChatMessage(chatmessage)
+                                            chatmessage = ""
+                                        }
+                                    }) {
+                                        Text(text = "보내기")
+                                    }
+                                }
+                            }
+
+                        }) { innerPadding ->
+                            LazyColumn(
+                                reverseLayout = true,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                            ) {
+                                items(chatMessages.reversed()) { message ->
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
+                                        contentAlignment = Alignment.BottomEnd
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(Color.LightGray)
+                                                .padding(8.dp)
+                                        ){
+                                            Text(text = message)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     //추가해야할 스크린
                     //채팅방
                     //글작성
-//                }
+                }
             }
         }
     }
 }
+
+fun saveChatMessage(message: String) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
+    val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
+
+
+
+    newMessageRef.setValue(message)
+}
+
+fun loadChatMessages(listener: (List<String>) -> Unit) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chat")
+
+    chatRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val messages = mutableListOf<String>()
+            for (childSnapshot in snapshot.children) {
+                val message = childSnapshot.getValue(String::class.java)
+                message?.let {
+                    messages.add(it)
+                }
+            }
+            listener(messages)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // 에러 처리
+        }
+    })
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            MyTopBar("home")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("home")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -135,14 +246,11 @@ fun HomeScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DmScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            MyTopBar("Dm")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("Dm")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -162,17 +270,15 @@ fun DmScreen(navController: NavController) {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            MyTopBar("스케줄")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("스케줄")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -188,14 +294,11 @@ fun ScheduleScreen(navController: NavController) {
 @Composable
 fun PersonalInfoScreen(navController: NavController) {
 
-    Scaffold(
-        topBar = {
-            MyTopBar("개인정보")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("개인정보")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -230,15 +333,14 @@ private fun MyTopBar(topBarTitle: String) {
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
     )
 }
+
 @Composable
 private fun MyBottomBara(navController: NavController) {
     BottomAppBar(
         containerColor = Color.Gray
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()
         ) {
             Button(onClick = {
                 navController.navigate("home")
