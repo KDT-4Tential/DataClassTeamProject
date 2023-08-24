@@ -1,6 +1,8 @@
 package com.example.dataclassteamproject
 
+import android.content.ContentValues.TAG
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -19,9 +21,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,34 +42,64 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             DataClassTeamProjectTheme {
 
-                val navController = rememberNavController()
+                val database = Firebase.database
+                val myRef = database.getReference("message")
 
-                NavHost(navController = navController, startDestination = "home") {
-                    composable("home") {
-                        HomeScreen(navController)
+                myRef.setValue("Hello, World!")
+
+                // Read from the database
+                myRef.addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        // This method is called once with the initial value and again
+                        // whenever data at this location is updated.
+                        val value = dataSnapshot.getValue<String>()
+                        Log.d(TAG, "Value is: $value")
                     }
-                    composable("dm") {
-                        DmScreen(navController)
+
+                    override fun onCancelled(error: DatabaseError) {
+                        // Failed to read value
+                        Log.w(TAG, "Failed to read value.", error.toException())
                     }
-                    composable("schedule") {
-                        ScheduleScreen(navController)
-                    }
-                    composable("personal") {
-                        PersonalInfoScreen(navController)
-                    }
-                    composable("boardview") {
-                        //여기에 보드뷰 스크린을 넣어주세요
-                    }
+                })
+
+
+//
+//                val navController = rememberNavController()
+//
+//                NavHost(navController = navController, startDestination = "home") {
+//                    composable("home") {
+//                        HomeScreen(navController)
+//                    }
+//                    composable("dm") {
+//                        DmScreen(navController)
+//                    }
+//                    composable("schedule") {
+//                        ScheduleScreen(navController)
+//                    }
+//                    composable("personal") {
+//                        PersonalInfoScreen(navController)
+//                    }
+//                    composable("boardview") {
+//                        //여기에 보드뷰 스크린을 넣어주세요
+//                    }
                     //추가해야할 스크린
                     //채팅방
-                }
+                    //글작성
+//                }
             }
         }
     }
