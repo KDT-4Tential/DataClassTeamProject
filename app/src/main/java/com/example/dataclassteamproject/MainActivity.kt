@@ -1,5 +1,6 @@
 package com.example.dataclassteamproject
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -89,6 +90,26 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 val user: FirebaseUser? = mAuth.currentUser
+
+                if (user != null) {
+                    // 사용자의 UID 가져오기
+                    val uid: String = user.uid
+
+                    // 사용자의 이메일 가져오기
+                    val email: String? = user.email
+
+                    // 사용자의 이름 가져오기
+                    val displayName: String? = user.displayName
+
+                    // 사용자의 프로필 사진 URL 가져오기
+                    val profilePhotoUrl: Uri? = user.photoUrl
+
+                    // 사용자의 추가 정보 (Custom Claims 등) 가져오기
+                    // 주의: 이 정보는 필요한 경우에만 사용하는 것이 좋습니다.
+
+                    // 이 정보들을 UI에 사용하거나 저장할 수 있습니다.
+                }
+
                 val startDestination = remember {
                     if (user == null) {
                         "login"
@@ -298,6 +319,7 @@ fun DmScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, Color.Black, RectangleShape)
+                            .clickable { navController.navigate("chatting") }
                     ) {
                         Text(text = "DM")
                     }
@@ -336,6 +358,7 @@ private fun ChattingScreen() {
     loadChatMessages { messages ->
         chatMessages = messages
     }
+
     Scaffold(topBar = {
         TopAppBar(
             title = {
