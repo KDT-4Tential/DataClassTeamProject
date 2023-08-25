@@ -50,39 +50,15 @@ import com.google.firebase.database.ValueEventListener
 
 class MainActivity : ComponentActivity() {
 
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
 
-
-
             DataClassTeamProjectTheme {
-
-//                getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-//                val database = Firebase.database
-//                val myRef = database.getReference("test")
-//
-//                myRef.setValue("Hello, World!")
-//
-//                // Read from the database
-//                myRef.addValueEventListener(object : ValueEventListener {
-//                    override fun onDataChange(dataSnapshot: DataSnapshot) {
-//                        // This method is called once with the initial value and again
-//                        // whenever data at this location is updated.
-//                        val value = dataSnapshot.getValue<String>()
-//                        Log.d(TAG, "Value is: $value")
-//                    }
-//
-//                    override fun onCancelled(error: DatabaseError) {
-//                        // Failed to read value
-//                        Log.w(TAG, "Failed to read value.", error.toException())
-//                    }
-//                })
-
 
                 val navController = rememberNavController()
 
+                //작업하시는 화면으로 startDestination해주시면 됩니다
                 NavHost(navController = navController, startDestination = "chatting") {
                     composable("home") {
                         HomeScreen(navController)
@@ -100,81 +76,7 @@ class MainActivity : ComponentActivity() {
                         //여기에 보드뷰 스크린을 넣어주세요
                     }
                     composable("chatting") {
-                        var chatmessage by remember { mutableStateOf("") }
-                        var chatMessages by remember { mutableStateOf(listOf<String>()) }
-
-
-                        loadChatMessages { messages ->
-                            chatMessages = messages
-                        }
-                        Scaffold(topBar = {
-                            TopAppBar(
-                                title = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Button(onClick = { /*TODO*/ }) {
-                                            Text(text = "back")
-                                        }
-                                        Text(text = "채팅방", modifier = Modifier.weight(1f))
-                                        Button(onClick = { /*TODO*/ }) {
-                                            Text(text = "검색")
-                                        }
-                                    }
-                                },
-                                //탑바 색바꾸기
-                                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
-                            )
-                        }, bottomBar = {
-                            BottomAppBar(
-                                containerColor = Color.Gray
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Button(onClick = { /*TODO*/ }) {
-                                        Text(text = "+")
-                                    }
-                                    TextField(value = chatmessage, onValueChange = { chatmessage = it })
-                                    Button(onClick = {
-                                        if (chatmessage.isNotEmpty()) {
-                                            chatMessages += chatmessage
-                                            saveChatMessage(chatmessage)
-                                            chatmessage = ""
-                                        }
-                                    }) {
-                                        Text(text = "보내기")
-                                    }
-                                }
-                            }
-
-                        }) { innerPadding ->
-                            LazyColumn(
-                                reverseLayout = true,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(innerPadding)
-                            ) {
-                                items(chatMessages.reversed()) { message ->
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
-                                        contentAlignment = Alignment.BottomEnd
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(Color.LightGray)
-                                                .padding(8.dp)
-                                        ){
-                                            Text(text = message)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        ChattingScreen()
                     }
                     //추가해야할 스크린
                     //채팅방
@@ -289,6 +191,89 @@ fun ScheduleScreen(navController: NavController) {
         }
     }
 }
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ChattingScreen() {
+    var chatmessage by remember { mutableStateOf("") }
+    var chatMessages by remember { mutableStateOf(listOf<String>()) }
+
+
+    loadChatMessages { messages ->
+        chatMessages = messages
+    }
+    Scaffold(topBar = {
+        TopAppBar(
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(onClick = { /*TODO*/ }) {
+                        Text(text = "back")
+                    }
+                    Text(text = "채팅방", modifier = Modifier.weight(1f))
+                    Button(onClick = { /*TODO*/ }) {
+                        Text(text = "검색")
+                    }
+                }
+            },
+            //탑바 색바꾸기
+            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+        )
+    }, bottomBar = {
+        BottomAppBar(
+            containerColor = Color.Gray
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = { /*TODO*/ }) {
+                    Text(text = "+")
+                }
+                TextField(value = chatmessage, onValueChange = { chatmessage = it })
+                Button(onClick = {
+                    if (chatmessage.isNotEmpty()) {
+                        chatMessages += chatmessage
+                        saveChatMessage(chatmessage)
+                        chatmessage = ""
+                    }
+                }) {
+                    Text(text = "보내기")
+                }
+            }
+        }
+
+    }) { innerPadding ->
+        LazyColumn(
+            reverseLayout = true,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            items(chatMessages.reversed()) { message ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.LightGray)
+                            .padding(8.dp)
+                    ) {
+                        Text(text = message)
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
