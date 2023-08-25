@@ -25,9 +25,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -36,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -79,7 +82,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = "chatting") {
+                NavHost(navController = navController, startDestination = "schedule") {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -87,7 +90,7 @@ class MainActivity : ComponentActivity() {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen( navController = rememberNavController(),
+                        ScheduleScreen(navController = rememberNavController(),
                             onPreviousMonthClick = {},
                             onNextMonthClick = {}
                         )
@@ -111,7 +114,8 @@ class MainActivity : ComponentActivity() {
 }
 
 fun saveChatMessage(message: String) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -121,7 +125,8 @@ fun saveChatMessage(message: String) {
 }
 
 fun loadChatMessages(listener: (List<String>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chat")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -195,13 +200,16 @@ fun DmScreen(navController: NavController) {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(navController: NavController,
-                   onPreviousMonthClick: () -> Unit,
-                   onNextMonthClick: () -> Unit
+fun ScheduleScreen(
+    navController: NavController,
+    onPreviousMonthClick: () -> Unit,
+    onNextMonthClick: () -> Unit
 
 ) {
+
     Scaffold(
         topBar = {
             MyTopBar("스케줄")
@@ -236,145 +244,212 @@ fun ScheduleScreen(navController: NavController,
 }
 
 // 달력구성 컴포저블
-            @Composable
-            fun CalendarComposable(
-                modifier: Modifier = Modifier,
-                selectedDate: LocalDate,
-                onDateSelected: (LocalDate, Int) -> Unit,
-                onPreviousMonthClick: () -> Unit,
-                onNextMonthClick: () -> Unit
-            ) {
-                Column(
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        IconButton(onClick = onPreviousMonthClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
-                        }
+@Composable
+fun CalendarComposable(
+    modifier: Modifier = Modifier,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate, Int) -> Unit,
+    onPreviousMonthClick: () -> Unit,
+    onNextMonthClick: () -> Unit
+) {
+    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedDayIndex by remember { mutableStateOf(-1) }
 
-                        val headerText =
-                            selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월"))
-                        Text(
-                            text = headerText,
-                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                        )
-
-                        IconButton(onClick = onNextMonthClick) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "일",
-                            modifier = Modifier.weight(1f),
-                            color = Color.Red,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "월",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "화",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "수",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "목",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "금",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "토",
-                            modifier = Modifier.weight(1f),
-                            color = Color.Blue,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    val firstDayOfMonth = selectedDate.withDayOfMonth(1)
-                    val lastDayOfMonth = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
-
-                    val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
-                    val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
-
-
-                    LazyVerticalGrid(
-                        GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
-                        contentPadding = PaddingValues(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(90.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // Display empty boxes for days before the first day of the month
-                        items(emptyDaysBefore) {
-                            Spacer(modifier = Modifier.size(30.dp))
-                        }
-
-                        itemsIndexed(daysInMonth) { index, day ->
-                            val date = selectedDate.withDayOfMonth(day)
-                            val isSelected = date == selectedDate
-                            Divider()
-                            CalendarDay(
-                                date = date,
-                                isSelected = isSelected,
-                                onDateSelected = { onDateSelected }
-                            )
-                        }
-                    }
-                }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onPreviousMonthClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
             }
 
+            val headerText =
+                selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월"))
+            Text(
+                text = headerText,
+                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            IconButton(onClick = onNextMonthClick) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "일",
+                modifier = Modifier.weight(1f),
+                color = Color.Red,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "월",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "화",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "수",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "목",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "금",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "토",
+                modifier = Modifier.weight(1f),
+                color = Color.Blue,
+                textAlign = TextAlign.Center
+            )
+        }
+        val firstDayOfMonth = selectedDate.withDayOfMonth(1)
+        val lastDayOfMonth = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
+
+        val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
+        val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
+
+
+        LazyVerticalGrid(
+            GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
+            contentPadding = PaddingValues(4.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Display empty boxes for days before the first day of the month
+            items(emptyDaysBefore) {
+                Spacer(modifier = Modifier.size(30.dp))
+            }
+
+            itemsIndexed(daysInMonth) { index, day ->
+                val date = selectedDate.withDayOfMonth(day)
+                val isSelected = date == selectedDate
+                val memo = memoMap[date] ?: ""
+
+                Divider()
+                CalendarDay(
+                    date = date,
+                    isSelected = isSelected,
+                    onDateSelected = { selectedDate ->
+                        selectedDayIndex = index
+                        showDialog = true
+                    },
+                    memo = memo
+                )
+
+            }
+        }
+        if (showDialog) {
+            MemoDialog(
+                memo = "", // 여기서 초기 메모 값 설정
+                onMemoChanged = { updatedMemo ->
+                    if (updatedMemo.isNotBlank()) {
+                        memoMap[selectedDate] = updatedMemo
+                    } else {
+                        memoMap.remove(selectedDate)
+                    }
+                    showDialog = false // 다이얼로그 닫기
+                },
+                onDismiss = { showDialog = false } // 다이얼로그 닫기
+            )
+        }
+
+    }
+}
 
 
 @Composable
 fun CalendarDay(
     date: LocalDate,
     isSelected: Boolean,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    memo: String?
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+//    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
+    var isMemoDialogOpen by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .size(30.dp)
-            .clip(CircleShape)
-            .clickable { onDateSelected(date) }
+            .size(width = 30.dp, height = 110.dp)
+            .clip(RectangleShape)
+            .clickable {
+                if (isSelected) {
+                    // 선택된 날짜 클릭 시 메모 다이얼로그 열기
+                    isMemoDialogOpen = true
+                } else {
+                    // 선택되지 않은 날짜 클릭 시 날짜 선택 동작 수행
+                    onDateSelected(date)
+                }
+            }
             .background(if (isSelected) Color.Gray else Color.Transparent),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.TopCenter
     ) {
         Text(
             text = date.dayOfMonth.toString(),
             fontWeight = FontWeight.Bold,
             color = if (isSelected) Color.White else Color.Black
         )
-//        if (hasExerciseRecord) { // 운동 기록이 있는 경우 점을 추가로 표시 (예시로남겨둠)
-//            Box(
-//                modifier = Modifier
-//                    .size(6.dp)
-//                    .background(Color.Green, CircleShape)
-//                    .align(Alignment.BottomCenter)
-//            )
-//        }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MemoDialog(
+    memo: String,
+    onMemoChanged: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var updatedMemo by remember { mutableStateOf(memo) }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("메모") },
+        text = {
+            TextField(
+                value = updatedMemo,
+                onValueChange = { updatedMemo = it },
+                label = { Text("메모를 입력하세요") },
+                singleLine = true,
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onMemoChanged(updatedMemo)
+                        onDismiss()
+                    }
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onMemoChanged(updatedMemo)
+                onDismiss()
+            }) {
+                Text("확인")
+            }
+        }
+    )
 }
 
 @Composable
@@ -506,6 +581,7 @@ private fun MyTopBar(topBarTitle: String) {
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
     )
 }
+
 @Composable
 private fun MyBottomBara(navController: NavController) {
     BottomAppBar(
@@ -545,7 +621,7 @@ private fun MyBottomBara(navController: NavController) {
 @Composable
 fun DefaultPreview() {
     DataClassTeamProjectTheme {
-        ScheduleScreen( navController = rememberNavController(),
+        ScheduleScreen(navController = rememberNavController(),
             onPreviousMonthClick = {},
             onNextMonthClick = {}
         )
