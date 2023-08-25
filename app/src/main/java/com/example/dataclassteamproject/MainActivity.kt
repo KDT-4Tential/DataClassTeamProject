@@ -1,11 +1,16 @@
 package com.example.dataclassteamproject
 
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,11 +43,19 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase.getInstance
@@ -50,16 +63,64 @@ import com.google.firebase.database.ValueEventListener
 
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    companion object {
+        const val RC_SIGN_IN = 100
+    }
+
+    private lateinit var mAuth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
+
+        override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+            mAuth = FirebaseAuth.getInstance()
+            // 구글 로그인 구현
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id)) // default_web_client_id 에러 시 rebuild
+                .requestEmail()
+                .build()
+
+            googleSignInClient = GoogleSignIn.getClient(this, gso)
+
         setContent {
 
             DataClassTeamProjectTheme {
 
                 val navController = rememberNavController()
 
+                val user: FirebaseUser? = mAuth.currentUser
+                val startDestination = remember {
+                    if (user == null) {
+                        "login"
+                    } else {
+                        "home"
+                    }
+                }
+                val signInIntent = googleSignInClient.signInIntent
+                val launcher =
+                    rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+                        val data = result.data
+                        // result returned from launching the intent from GoogleSignInApi.getSignInIntent()
+                        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                        val exception = task.exception
+                        if (task.isSuccessful) {
+                            try {
+                                // Google SignIn was successful, authenticate with firebase
+                                val account = task.getResult(ApiException::class.java)!!
+                                firebaseAuthWithGoogle(account.idToken!!)
+                                navController.popBackStack()
+                                navController.navigate("home")
+                            } catch (e: Exception) {
+                                // Google SignIn failed
+                                Log.d("SignIn", "로그인 실패")
+                            }
+                        } else {
+                            Log.d("SignIn", exception.toString())
+                        }
+                    }
+
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = "chatting") {
+                NavHost(navController = navController, startDestination = startDestination) {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -78,14 +139,87 @@ class MainActivity : ComponentActivity() {
                     composable("chatting") {
                         ChattingScreen()
                     }
+                    composable("login") {
+                        LoginScreen(
+                            signInClicked = {
+                                launcher.launch(signInIntent)
+                            })
+                    }
                     //추가해야할 스크린
                     //채팅방
                     //글작성
                 }
+
             }
         }
     }
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        mAuth.signInWithCredential(credential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // SignIn Successful
+                    Toast.makeText(this, "로그인 성공", Toast.LENGTH_SHORT).show()
+                } else {
+                    // SignIn Failed
+                    Toast.makeText(this, "로그인 실패", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
+
+    private fun signOut(navController: NavController) {
+        // get the google account
+        val googleSignInClient: GoogleSignInClient
+
+        // configure Google SignIn
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Sign Out of all accounts
+        mAuth.signOut()
+        googleSignInClient.signOut().addOnSuccessListener {
+            Toast.makeText(this, "로그아웃 성공", Toast.LENGTH_SHORT).show()
+            navController.navigate("login")
+        }.addOnFailureListener {
+            Toast.makeText(this, "로그아웃 실패", Toast.LENGTH_SHORT).show()
+        }
+    }
 }
+
+@Composable
+fun LoginScreen(signInClicked: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        GoogleSignInButton(signInClicked)
+    }
+}
+
+@Composable
+fun GoogleSignInButton(
+    signInClicked: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable { signInClicked() },
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "login With Google",
+            modifier = Modifier.padding(start = 20.dp),
+            fontSize = 20.sp
+        )
+    }
+}
+
 
 fun saveChatMessage(message: String) {
     val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
