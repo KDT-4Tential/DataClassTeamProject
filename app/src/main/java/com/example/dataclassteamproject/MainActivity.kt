@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -34,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -59,6 +62,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase.getInstance
+import com.google.firebase.database.ValueEventListener
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -71,7 +78,8 @@ class MainActivity : ComponentActivity() {
 
                 val navController = rememberNavController()
 
-                NavHost(navController = navController, startDestination = "home") {
+                //작업하시는 화면으로 startDestination해주시면 됩니다
+                NavHost(navController = navController, startDestination = "chatting") {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -90,25 +98,59 @@ class MainActivity : ComponentActivity() {
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
                     }
+                    composable("chatting") {
+                        ChattingScreen()
+                    }
                     //추가해야할 스크린
                     //채팅방
+                    //글작성
                 }
             }
         }
     }
 }
 
+fun saveChatMessage(message: String) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
+    val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
+
+
+
+    newMessageRef.setValue(message)
+}
+
+fun loadChatMessages(listener: (List<String>) -> Unit) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chat")
+
+    chatRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val messages = mutableListOf<String>()
+            for (childSnapshot in snapshot.children) {
+                val message = childSnapshot.getValue(String::class.java)
+                message?.let {
+                    messages.add(it)
+                }
+            }
+            listener(messages)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // 에러 처리
+        }
+    })
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            MyTopBar("home")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("home")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -129,14 +171,11 @@ fun HomeScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DmScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            MyTopBar("Dm")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("Dm")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -156,7 +195,6 @@ fun DmScreen(navController: NavController) {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(navController: NavController,
@@ -339,6 +377,88 @@ fun CalendarDay(
     }
 }
 
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ChattingScreen() {
+    var chatmessage by remember { mutableStateOf("") }
+    var chatMessages by remember { mutableStateOf(listOf<String>()) }
+
+
+    loadChatMessages { messages ->
+        chatMessages = messages
+    }
+    Scaffold(topBar = {
+        TopAppBar(
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(onClick = { /*TODO*/ }) {
+                        Text(text = "back")
+                    }
+                    Text(text = "채팅방", modifier = Modifier.weight(1f))
+                    Button(onClick = { /*TODO*/ }) {
+                        Text(text = "검색")
+                    }
+                }
+            },
+            //탑바 색바꾸기
+            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+        )
+    }, bottomBar = {
+        BottomAppBar(
+            containerColor = Color.Gray
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = { /*TODO*/ }) {
+                    Text(text = "+")
+                }
+                TextField(value = chatmessage, onValueChange = { chatmessage = it })
+                Button(onClick = {
+                    if (chatmessage.isNotEmpty()) {
+                        chatMessages += chatmessage
+                        saveChatMessage(chatmessage)
+                        chatmessage = ""
+                    }
+                }) {
+                    Text(text = "보내기")
+                }
+            }
+        }
+
+    }) { innerPadding ->
+        LazyColumn(
+            reverseLayout = true,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            items(chatMessages.reversed()) { message ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.LightGray)
+                            .padding(8.dp)
+                    ) {
+                        Text(text = message)
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -386,7 +506,6 @@ private fun MyTopBar(topBarTitle: String) {
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
     )
 }
-
 @Composable
 private fun MyBottomBara(navController: NavController) {
     BottomAppBar(
