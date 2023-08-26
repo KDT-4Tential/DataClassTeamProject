@@ -1,6 +1,5 @@
 package com.example.dataclassteamproject
 
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -61,6 +60,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -71,17 +73,17 @@ class MainActivity : ComponentActivity() {
     private lateinit var mAuth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
 
-        override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-            mAuth = FirebaseAuth.getInstance()
-            // 구글 로그인 구현
-            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id)) // default_web_client_id 에러 시 rebuild
-                .requestEmail()
-                .build()
+        mAuth = FirebaseAuth.getInstance()
+        // 구글 로그인 구현
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id)) // default_web_client_id 에러 시 rebuild
+            .requestEmail()
+            .build()
 
-            googleSignInClient = GoogleSignIn.getClient(this, gso)
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
 
         setContent {
 
@@ -90,25 +92,6 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 val user: FirebaseUser? = mAuth.currentUser
-
-                if (user != null) {
-                    // 사용자의 UID 가져오기
-                    val uid: String = user.uid
-
-                    // 사용자의 이메일 가져오기
-                    val email: String? = user.email
-
-                    // 사용자의 이름 가져오기
-                    val displayName: String? = user.displayName
-
-                    // 사용자의 프로필 사진 URL 가져오기
-                    val profilePhotoUrl: Uri? = user.photoUrl
-
-                    // 사용자의 추가 정보 (Custom Claims 등) 가져오기
-                    // 주의: 이 정보는 필요한 경우에만 사용하는 것이 좋습니다.
-
-                    // 이 정보들을 UI에 사용하거나 저장할 수 있습니다.
-                }
 
                 val startDestination = remember {
                     if (user == null) {
@@ -152,13 +135,13 @@ class MainActivity : ComponentActivity() {
                         ScheduleScreen(navController)
                     }
                     composable("personal") {
-                        PersonalInfoScreen(navController)
+                        PersonalInfoScreen(navController, onClicked = { signOut(navController) })
                     }
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
                     }
                     composable("chatting") {
-                        ChattingScreen()
+                        ChattingScreen(mAuth)
                     }
                     composable("login") {
                         LoginScreen(
@@ -167,13 +150,13 @@ class MainActivity : ComponentActivity() {
                             })
                     }
                     //추가해야할 스크린
-                    //채팅방
                     //글작성
                 }
 
             }
         }
     }
+
     private fun firebaseAuthWithGoogle(idToken: String) {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         mAuth.signInWithCredential(credential)
@@ -241,27 +224,33 @@ fun GoogleSignInButton(
     }
 }
 
+data class ChatMessage(
+    val message: String? = "메시지 오류",
+    val userId: String? = "UID 오류",
+    val userName: String? = "이름 오류",
+    val uploadDate: String? = ""
+)
 
-fun saveChatMessage(message: String) {
+fun saveChatMessage(chatMessage: ChatMessage) {
     val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
+    val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
 
 
-    newMessageRef.setValue(message)
+    newMessageRef.setValue(chatMessage)
 }
 
-fun loadChatMessages(listener: (List<String>) -> Unit) {
+fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
     val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chat")
+    val chatRef = database.getReference("chattings")
 
     chatRef.addValueEventListener(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            val messages = mutableListOf<String>()
+            val messages = mutableListOf<ChatMessage>()
             for (childSnapshot in snapshot.children) {
-                val message = childSnapshot.getValue(String::class.java)
-                message?.let {
+                val chatMessage = childSnapshot.getValue(ChatMessage::class.java)
+                chatMessage?.let {
                     messages.add(it)
                 }
             }
@@ -350,10 +339,10 @@ fun ScheduleScreen(navController: NavController) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ChattingScreen() {
+private fun ChattingScreen(mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
-    var chatMessages by remember { mutableStateOf(listOf<String>()) }
-
+    var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
+    val user: FirebaseUser? = mAuth.currentUser
 
     loadChatMessages { messages ->
         chatMessages = messages
@@ -394,8 +383,11 @@ private fun ChattingScreen() {
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
-                        chatMessages += chatmessage
-                        saveChatMessage(chatmessage)
+                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        val newChatMessage =
+                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+//                        chatMessages += chatmessage
+                        saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
                 }) {
@@ -412,18 +404,34 @@ private fun ChattingScreen() {
                 .padding(innerPadding)
         ) {
             items(chatMessages.reversed()) { message ->
+                val isCurrentUserMessage = user?.uid == message.userId
+                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
-                    contentAlignment = Alignment.BottomEnd
+                    contentAlignment = alignment
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(Color.LightGray)
-                            .padding(8.dp)
-                    ) {
-                        Text(text = message)
+                    Column {
+                        if (!isCurrentUserMessage) {
+                            Text(text = message.userName ?: "")
+                        }
+                        Row {
+                            if (isCurrentUserMessage){
+                                Text(text = message.uploadDate ?: "")
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(backgroundColor)
+                                    .padding(8.dp)
+                            ) {
+                                Text(text = message.message ?: "")
+                            }
+                            if (!isCurrentUserMessage){
+                                Text(text = message.uploadDate ?: "")
+                            }
+                        }
                     }
                 }
             }
@@ -434,7 +442,7 @@ private fun ChattingScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalInfoScreen(navController: NavController) {
+fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit) {
 
     Scaffold(topBar = {
         MyTopBar("개인정보")
@@ -460,7 +468,7 @@ fun PersonalInfoScreen(navController: NavController) {
                 Text(text = "정보")
                 Text(text = "정보")
                 Text(text = "정보")
-                Text(text = "정보")
+                Text(text = "로그아웃", modifier = Modifier.clickable { onClicked() })
             }
         }
     }
