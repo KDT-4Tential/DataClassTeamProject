@@ -149,24 +149,6 @@ fun loadChatMessages(listener: (List<String>) -> Unit) {
     })
 }
 
-val db = FirebaseFirestore.getInstance()
-
-fun saveMemo(date: String, memo: String) {
-    val memoData = hashMapOf(
-        "date" to date,
-        "content" to memo
-    )
-
-    db.collection("memos")
-        .add(memoData)
-        .addOnSuccessListener { documentReference ->
-            Log.d("Firestore", "Document written with ID: ${documentReference.id}")
-        }
-        .addOnFailureListener { e ->
-            Log.w("Firestore", "Error adding document", e)
-        }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
