@@ -386,7 +386,6 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                         val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                         val newChatMessage =
                             ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
-//                        chatMessages += chatmessage
                         saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
