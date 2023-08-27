@@ -1,6 +1,7 @@
 package com.example.dataclassteamproject
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -25,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
@@ -35,8 +37,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -57,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -68,7 +73,7 @@ import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +84,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = "chatting") {
+                NavHost(navController = navController, startDestination = "schedule") {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -87,7 +92,7 @@ class MainActivity : ComponentActivity() {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen( navController = rememberNavController(),
+                        ScheduleScreen(navController = rememberNavController(),
                             onPreviousMonthClick = {},
                             onNextMonthClick = {}
                         )
@@ -111,7 +116,8 @@ class MainActivity : ComponentActivity() {
 }
 
 fun saveChatMessage(message: String) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -121,7 +127,8 @@ fun saveChatMessage(message: String) {
 }
 
 fun loadChatMessages(listener: (List<String>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chat")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -142,6 +149,23 @@ fun loadChatMessages(listener: (List<String>) -> Unit) {
     })
 }
 
+val db = FirebaseFirestore.getInstance()
+
+fun saveMemo(date: String, memo: String) {
+    val memoData = hashMapOf(
+        "date" to date,
+        "content" to memo
+    )
+
+    db.collection("memos")
+        .add(memoData)
+        .addOnSuccessListener { documentReference ->
+            Log.d("Firestore", "Document written with ID: ${documentReference.id}")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error adding document", e)
+        }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,13 +219,18 @@ fun DmScreen(navController: NavController) {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(navController: NavController,
-                   onPreviousMonthClick: () -> Unit,
-                   onNextMonthClick: () -> Unit
-
+fun ScheduleScreen(
+    navController: NavController,
+    onPreviousMonthClick: () -> Unit,
+    onNextMonthClick: () -> Unit
 ) {
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedScheduleDate by remember { mutableStateOf(LocalDate.now()) }
+
     Scaffold(
         topBar = {
             MyTopBar("스케줄")
@@ -221,7 +250,10 @@ fun ScheduleScreen(navController: NavController,
             CalendarComposable(
                 modifier = Modifier.fillMaxWidth(),
                 selectedDate = selectedDate,
-                onDateSelected = { selectedDate, position -> },
+                onDateSelected = { date, position ->
+                    selectedScheduleDate = date
+                    showDialog = true
+                },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
                     onPreviousMonthClick()
@@ -232,119 +264,188 @@ fun ScheduleScreen(navController: NavController,
                 }
             )
         }
+
+        if (showDialog) {
+            ScheduleInputDialog(
+                date = selectedScheduleDate,
+                onDismissRequest = { showDialog = false }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScheduleInputDialog(date: LocalDate, onDismissRequest: () -> Unit) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // 배경 및 테두리
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // 일정 입력 제목
+                    Text(
+                        text = "일정 입력",
+                        style = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        ),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 일정 입력 필드
+                    TextField(
+                        value = "", // 초기 값은 빈 문자열로 설정
+                        onValueChange = { /* update the value here */ },
+                        placeholder = { Text(text = "일정을 입력하세요.") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = Color.White,
+                            focusedIndicatorColor = Color.Blue,
+                            unfocusedIndicatorColor = Color.Gray
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 확인 버튼
+                    Button(
+                        onClick = {
+                            // 일정 추가 로직을 여기에 추가
+                            onDismissRequest()
+                        },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(text = "확인")
+                    }
+                }
+            }
+        }
     }
 }
 
 // 달력구성 컴포저블
-            @Composable
-            fun CalendarComposable(
-                modifier: Modifier = Modifier,
-                selectedDate: LocalDate,
-                onDateSelected: (LocalDate, Int) -> Unit,
-                onPreviousMonthClick: () -> Unit,
-                onNextMonthClick: () -> Unit
-            ) {
-                Column(
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        IconButton(onClick = onPreviousMonthClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
-                        }
-
-                        val headerText =
-                            selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월"))
-                        Text(
-                            text = headerText,
-                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                        )
-
-                        IconButton(onClick = onNextMonthClick) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "일",
-                            modifier = Modifier.weight(1f),
-                            color = Color.Red,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "월",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "화",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "수",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "목",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "금",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "토",
-                            modifier = Modifier.weight(1f),
-                            color = Color.Blue,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    val firstDayOfMonth = selectedDate.withDayOfMonth(1)
-                    val lastDayOfMonth = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
-
-                    val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
-                    val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
-
-
-                    LazyVerticalGrid(
-                        GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
-                        contentPadding = PaddingValues(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(90.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // Display empty boxes for days before the first day of the month
-                        items(emptyDaysBefore) {
-                            Spacer(modifier = Modifier.size(30.dp))
-                        }
-
-                        itemsIndexed(daysInMonth) { index, day ->
-                            val date = selectedDate.withDayOfMonth(day)
-                            val isSelected = date == selectedDate
-                            Divider()
-                            CalendarDay(
-                                date = date,
-                                isSelected = isSelected,
-                                onDateSelected = { onDateSelected }
-                            )
-                        }
-                    }
-                }
+@Composable
+fun CalendarComposable(
+    modifier: Modifier = Modifier,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate, Int) -> Unit,
+    onPreviousMonthClick: () -> Unit,
+    onNextMonthClick: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onPreviousMonthClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
             }
 
+            val headerText =
+                selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월"))
+            Text(
+                text = headerText,
+                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp),
+            )
+
+            IconButton(onClick = onNextMonthClick) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "일",
+                modifier = Modifier.weight(1f),
+                color = Color.Red,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "월",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "화",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "수",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "목",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "금",
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "토",
+                modifier = Modifier.weight(1f),
+                color = Color.Blue,
+                textAlign = TextAlign.Center
+            )
+        }
+        val firstDayOfMonth = selectedDate.withDayOfMonth(1)
+        val lastDayOfMonth = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
+
+        val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
+        val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
+
+
+        LazyVerticalGrid(
+            GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
+            contentPadding = PaddingValues(4.dp),
+            verticalArrangement = Arrangement.spacedBy(90.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Display empty boxes for days before the first day of the month
+            items(emptyDaysBefore) {
+                Spacer(modifier = Modifier.size(30.dp))
+            }
+
+            itemsIndexed(daysInMonth) { index, day ->
+                val date = selectedDate.withDayOfMonth(day)
+                val isSelected = date == selectedDate
+                Divider()
+                CalendarDay(
+                    date = date,
+                    isSelected = isSelected,
+                    onDateSelected = { onDateSelected }
+                )
+            }
+        }
+    }
+}
 
 
 @Composable
@@ -366,14 +467,6 @@ fun CalendarDay(
             fontWeight = FontWeight.Bold,
             color = if (isSelected) Color.White else Color.Black
         )
-//        if (hasExerciseRecord) { // 운동 기록이 있는 경우 점을 추가로 표시 (예시로남겨둠)
-//            Box(
-//                modifier = Modifier
-//                    .size(6.dp)
-//                    .background(Color.Green, CircleShape)
-//                    .align(Alignment.BottomCenter)
-//            )
-//        }
     }
 }
 
@@ -506,6 +599,7 @@ private fun MyTopBar(topBarTitle: String) {
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
     )
 }
+
 @Composable
 private fun MyBottomBara(navController: NavController) {
     BottomAppBar(
@@ -545,7 +639,7 @@ private fun MyBottomBara(navController: NavController) {
 @Composable
 fun DefaultPreview() {
     DataClassTeamProjectTheme {
-        ScheduleScreen( navController = rememberNavController(),
+        ScheduleScreen(navController = rememberNavController(),
             onPreviousMonthClick = {},
             onNextMonthClick = {}
         )
