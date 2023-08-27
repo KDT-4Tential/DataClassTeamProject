@@ -3,6 +3,7 @@ package com.example.dataclassteamproject
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -207,7 +209,6 @@ fun ScheduleScreen(
     navController: NavController,
     onPreviousMonthClick: () -> Unit,
     onNextMonthClick: () -> Unit
-
 ) {
 
     Scaffold(
@@ -229,7 +230,8 @@ fun ScheduleScreen(
             CalendarComposable(
                 modifier = Modifier.fillMaxWidth(),
                 selectedDate = selectedDate,
-                onDateSelected = { selectedDate, position -> },
+                onDateSelected = { newSelectedDate ->
+                    selectedDate = newSelectedDate },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
                     onPreviousMonthClick()
@@ -248,13 +250,13 @@ fun ScheduleScreen(
 fun CalendarComposable(
     modifier: Modifier = Modifier,
     selectedDate: LocalDate,
-    onDateSelected: (LocalDate, Int) -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
     onPreviousMonthClick: () -> Unit,
     onNextMonthClick: () -> Unit
 ) {
     var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
     var showDialog by remember { mutableStateOf(false) }
-    var selectedDayIndex by remember { mutableStateOf(-1) }
+//    var selectedDayIndex by remember { mutableStateOf(-1) }
 
     Column(
         modifier = modifier
@@ -332,7 +334,7 @@ fun CalendarComposable(
         val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
         val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
 
-
+        var selectedDate by remember { mutableStateOf(LocalDate.now()) }
         LazyVerticalGrid(
             GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
             contentPadding = PaddingValues(4.dp),
@@ -344,7 +346,7 @@ fun CalendarComposable(
                 Spacer(modifier = Modifier.size(30.dp))
             }
 
-            itemsIndexed(daysInMonth) { index, day ->
+            items(daysInMonth) { day ->
                 val date = selectedDate.withDayOfMonth(day)
                 val isSelected = date == selectedDate
                 val memo = memoMap[date] ?: ""
@@ -353,18 +355,18 @@ fun CalendarComposable(
                 CalendarDay(
                     date = date,
                     isSelected = isSelected,
-                    onDateSelected = { selectedDate ->
-                        selectedDayIndex = index
+                    onDateSelected = {
+                        selectedDate = date
                         showDialog = true
                     },
                     memo = memo
                 )
-
             }
         }
         if (showDialog) {
+            val selectedMemo = memoMap[selectedDate] ?: ""
             MemoDialog(
-                memo = "", // 여기서 초기 메모 값 설정
+                memo = selectedMemo, // 여기서 초기 메모 값 설정
                 onMemoChanged = { updatedMemo ->
                     if (updatedMemo.isNotBlank()) {
                         memoMap[selectedDate] = updatedMemo
@@ -376,7 +378,6 @@ fun CalendarComposable(
                 onDismiss = { showDialog = false } // 다이얼로그 닫기
             )
         }
-
     }
 }
 
@@ -386,32 +387,43 @@ fun CalendarDay(
     date: LocalDate,
     isSelected: Boolean,
     onDateSelected: (LocalDate) -> Unit,
-    memo: String?
+    memo: String?,
 ) {
     var showDialog by remember { mutableStateOf(false) }
 //    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
-    var isMemoDialogOpen by remember { mutableStateOf(false) }
+//    var isMemoDialogOpen by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .size(width = 30.dp, height = 110.dp)
             .clip(RectangleShape)
+            .then(
+                if (isSelected) Modifier.border(1.dp, Color.LightGray, shape = RectangleShape)
+                else Modifier
+            )
             .clickable {
-                if (isSelected) {
-                    // 선택된 날짜 클릭 시 메모 다이얼로그 열기
-                    isMemoDialogOpen = true
-                } else {
-                    // 선택되지 않은 날짜 클릭 시 날짜 선택 동작 수행
+                if (!isSelected) {
                     onDateSelected(date)
                 }
-            }
-            .background(if (isSelected) Color.Gray else Color.Transparent),
+                showDialog = !showDialog
+            },
         contentAlignment = Alignment.TopCenter
     ) {
         Text(
             text = date.dayOfMonth.toString(),
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) Color.White else Color.Black
+            color = if (isSelected) Color.White else Color.Black,
+            modifier = Modifier.background(if (isSelected) Color.Red else Color.Transparent)
         )
+        if (memo != null && memo.isNotEmpty()) {
+            Text(
+                text = memo,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .background(Color.White)
+                    .padding(4.dp)
+            )
+        }
     }
 }
 
