@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
@@ -44,17 +43,17 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -67,8 +66,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
+import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
 import java.time.LocalDate
@@ -78,6 +80,7 @@ import java.time.format.DateTimeFormatter
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         setContent {
             DataClassTeamProjectTheme {
 
@@ -210,7 +213,6 @@ fun ScheduleScreen(
     onPreviousMonthClick: () -> Unit,
     onNextMonthClick: () -> Unit
 ) {
-
     Scaffold(
         topBar = {
             MyTopBar("스케줄")
@@ -231,7 +233,8 @@ fun ScheduleScreen(
                 modifier = Modifier.fillMaxWidth(),
                 selectedDate = selectedDate,
                 onDateSelected = { newSelectedDate ->
-                    selectedDate = newSelectedDate },
+                    selectedDate = newSelectedDate
+                },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
                     onPreviousMonthClick()
@@ -256,7 +259,6 @@ fun CalendarComposable(
 ) {
     var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
     var showDialog by remember { mutableStateOf(false) }
-//    var selectedDayIndex by remember { mutableStateOf(-1) }
 
     Column(
         modifier = modifier
@@ -286,62 +288,33 @@ fun CalendarComposable(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
+        Row(  //Text 로 나열되있던 코드를 forEach 써서 단축
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "일",
-                modifier = Modifier.weight(1f),
-                color = Color.Red,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "월",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "화",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "수",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "목",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "금",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "토",
-                modifier = Modifier.weight(1f),
-                color = Color.Blue,
-                textAlign = TextAlign.Center
-            )
+            val daysOfWeek = listOf("일", "월", "화", "수", "목", "금", "토")
+
+            daysOfWeek.forEachIndexed { index, day ->
+                Text(
+                    text = day,
+                    modifier = Modifier.weight(1f),
+                    color = if (index == 0) Color.Red else if (index == 6) Color.Blue else Color.Black, // 일,토요일 색 변환
+                    textAlign = TextAlign.Center
+                )
+            }
         }
         val firstDayOfMonth = selectedDate.withDayOfMonth(1)
         val lastDayOfMonth = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
-
         val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
-        val emptyDaysBefore = (1 until firstDayOfMonth.dayOfWeek.value).toList()
+        val emptyDaysBefore = (0 until firstDayOfMonth.dayOfWeek.value).toList()
 
-        var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-        LazyVerticalGrid(
+        LazyVerticalGrid(  // 달력에 날짜들을 그리는 코드
             GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
             contentPadding = PaddingValues(4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Display empty boxes for days before the first day of the month
+
             items(emptyDaysBefore) {
                 Spacer(modifier = Modifier.size(30.dp))
             }
@@ -349,14 +322,19 @@ fun CalendarComposable(
             items(daysInMonth) { day ->
                 val date = selectedDate.withDayOfMonth(day)
                 val isSelected = date == selectedDate
-                val memo = memoMap[date] ?: ""
+                var memo = memoMap[date] ?: ""
+                // Firebase에서 메모 읽어오기
+                getMemoFromFirebase(date) { firebaseMemo ->
+                    if (firebaseMemo.isNotEmpty())
+                        memoMap[date] = firebaseMemo
+                }
 
                 Divider()
                 CalendarDay(
                     date = date,
                     isSelected = isSelected,
                     onDateSelected = {
-                        selectedDate = date
+                        onDateSelected(date)
                         showDialog = true
                     },
                     memo = memo
@@ -370,8 +348,10 @@ fun CalendarComposable(
                 onMemoChanged = { updatedMemo ->
                     if (updatedMemo.isNotBlank()) {
                         memoMap[selectedDate] = updatedMemo
+                        saveMemoToFirebase(selectedDate, updatedMemo) // Firebase에 저장
                     } else {
                         memoMap.remove(selectedDate)
+                        saveMemoToFirebase(selectedDate, "") // 메모가 없을 경우 Firebase에서도 삭제
                     }
                     showDialog = false // 다이얼로그 닫기
                 },
@@ -390,8 +370,6 @@ fun CalendarDay(
     memo: String?,
 ) {
     var showDialog by remember { mutableStateOf(false) }
-//    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
-//    var isMemoDialogOpen by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .size(width = 30.dp, height = 110.dp)
@@ -417,15 +395,18 @@ fun CalendarDay(
         if (memo != null && memo.isNotEmpty()) {
             Text(
                 text = memo,
+                color = Color.Black,
                 fontSize = 10.sp,
                 modifier = Modifier
+                    .fillMaxWidth()
                     .align(Alignment.Center)
-                    .background(Color.White)
+                    .background(Color.Cyan)
                     .padding(4.dp)
             )
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -462,6 +443,31 @@ fun MemoDialog(
             }
         }
     )
+}
+
+// Firebase 데이터베이스 레퍼런스를 가져옵니다.
+private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+private val memoRef: DatabaseReference = database.reference.child("Calendar_memo")
+
+// 메모를 Firebase에 저장하는 함수
+fun saveMemoToFirebase(date: LocalDate, memo: String) {
+    val formattedDate = date.format(DateTimeFormatter.ISO_DATE) // 날짜를 문자열로 변환
+    memoRef.child(formattedDate).setValue(memo)
+}
+
+// 날짜에 해당하는 메모를 Firebase에서 읽어오는 함수
+fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
+    val formattedDate = date.format(DateTimeFormatter.ISO_DATE) // 날짜를 문자열로 변환
+    memoRef.child(formattedDate).addListenerForSingleValueEvent(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val memo = snapshot.getValue(String::class.java) ?: ""
+            callback(memo)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // 처리 중 에러 발생 시
+        }
+    })
 }
 
 @Composable
@@ -629,13 +635,13 @@ private fun MyBottomBara(navController: NavController) {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    DataClassTeamProjectTheme {
-        ScheduleScreen(navController = rememberNavController(),
-            onPreviousMonthClick = {},
-            onNextMonthClick = {}
-        )
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun DefaultPreview() {
+//    DataClassTeamProjectTheme {
+//        ScheduleScreen(navController = rememberNavController(),
+//            onPreviousMonthClick = {},
+//            onNextMonthClick = {}
+//        )
+//    }
+//}
