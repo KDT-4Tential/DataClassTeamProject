@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "585169410732",
+    "firebase_url": "https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "dataclass-27aac",
+    "storage_bucket": "dataclass-27aac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585169410732:android:81d00f54645b50c3d9dd09",
+        "android_client_info": {
+          "package_name": "com.example.dataclassteamproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "585169410732-hs1947fll4ate4jvkha4lg0n8jjr1l5m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXLXYBBaQzgymzPM16MsLgYRs1g6xgA1I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "585169410732-f166tmt4skl5gheo6agljtqq9a6uigrp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
