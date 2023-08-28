@@ -1,9 +1,14 @@
 package com.example.dataclassteamproject
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,6 +77,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase.getInstance
@@ -79,14 +91,69 @@ import com.google.firebase.database.ValueEventListener
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        const val RC_SIGN_IN = 100
+    }
+
+    private lateinit var mAuth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        mAuth = FirebaseAuth.getInstance()
+        // 구글 로그인 구현
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id)) // default_web_client_id 에러 시 rebuild
+            .requestEmail()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
         setContent {
+
             DataClassTeamProjectTheme {
 
                 val navController = rememberNavController()
+
+                val user: FirebaseUser? = mAuth.currentUser
+
+                val startDestination = remember {
+                    if (user == null) {
+                        "login"
+                    } else {
+                        "home"
+                    }
+                }
+                val signInIntent = googleSignInClient.signInIntent
+                val launcher =
+                    rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+                        val data = result.data
+                        // result returned from launching the intent from GoogleSignInApi.getSignInIntent()
+                        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                        val exception = task.exception
+                        if (task.isSuccessful) {
+                            try {
+                                // Google SignIn was successful, authenticate with firebase
+                                val account = task.getResult(ApiException::class.java)!!
+                                firebaseAuthWithGoogle(account.idToken!!)
+                                navController.popBackStack()
+                                navController.navigate("home")
+                            } catch (e: Exception) {
+                                // Google SignIn failed
+                                Log.d("SignIn", "로그인 실패")
+                            }
+                        } else {
+                            Log.d("SignIn", exception.toString())
+                        }
+                    }
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
                 NavHost(navController = navController, startDestination = "schedule") {
@@ -103,14 +170,23 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("personal") {
-                        PersonalInfoScreen(navController)
+                        PersonalInfoScreen(navController, onClicked = { signOut(navController) })
                     }
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
                     }
                     composable("chatting") {
-                        ChattingScreen()
+                        ChattingScreen(mAuth)
                     }
+                    composable("login") {
+                        LoginScreen(
+                            signInClicked = {
+                                launcher.launch(signInIntent)
+                            })
+                    }
+//                    composable("test") {
+//                        TestScreen()
+//                    }
                     //추가해야할 스크린
                     //채팅방
                     //글작성
@@ -118,30 +194,90 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        mAuth.signInWithCredential(credential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // SignIn Successful
+                    Toast.makeText(this, "로그인 성공", Toast.LENGTH_SHORT).show()
+                } else {
+                    // SignIn Failed
+                    Toast.makeText(this, "로그인 실패", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
+
+    private fun signOut(navController: NavController) {
+        // get the google account
+        val googleSignInClient: GoogleSignInClient
+
+        // configure Google SignIn
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Sign Out of all accounts
+        mAuth.signOut()
+        googleSignInClient.signOut().addOnSuccessListener {
+            Toast.makeText(this, "로그아웃 성공", Toast.LENGTH_SHORT).show()
+            navController.navigate("login")
+        }.addOnFailureListener {
+            Toast.makeText(this, "로그아웃 실패", Toast.LENGTH_SHORT).show()
+        }
+    }
 }
 
-fun saveChatMessage(message: String) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chat") // "chat"이라는 경로로 데이터를 저장
+
+@Composable
+fun GoogleSignInButton(
+    signInClicked: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable { signInClicked() },
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "login With Google",
+            modifier = Modifier.padding(start = 20.dp),
+            fontSize = 20.sp
+        )
+    }
+}
+
+data class ChatMessage(
+    val message: String? = "메시지 오류",
+    val userId: String? = "UID 오류",
+    val userName: String? = "이름 오류",
+    val uploadDate: String? = "",
+    var downloadUrl: String? = ""
+)
+
+fun saveChatMessage(chatMessage: ChatMessage) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
-
-
-    newMessageRef.setValue(message)
+    newMessageRef.setValue(chatMessage)
 }
 
-fun loadChatMessages(listener: (List<String>) -> Unit) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chat")
+fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chattings")
 
     chatRef.addValueEventListener(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            val messages = mutableListOf<String>()
+            val messages = mutableListOf<ChatMessage>()
             for (childSnapshot in snapshot.children) {
-                val message = childSnapshot.getValue(String::class.java)
-                message?.let {
+                val chatMessage = childSnapshot.getValue(ChatMessage::class.java)
+                chatMessage?.let {
                     messages.add(it)
                 }
             }
@@ -198,6 +334,7 @@ fun DmScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, Color.Black, RectangleShape)
+                            .clickable { navController.navigate("chatting") }
                     ) {
                         Text(text = "DM")
                     }
@@ -459,10 +596,10 @@ fun CalendarDay(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ChattingScreen() {
+private fun ChattingScreen(mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
-    var chatMessages by remember { mutableStateOf(listOf<String>()) }
-
+    var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
+    val user: FirebaseUser? = mAuth.currentUser
 
     loadChatMessages { messages ->
         chatMessages = messages
@@ -496,14 +633,16 @@ private fun ChattingScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = { /*TODO*/ }) {
+                Button(onClick = { }) {
                     Text(text = "+")
                 }
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
-                        chatMessages += chatmessage
-                        saveChatMessage(chatmessage)
+                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        val newChatMessage =
+                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+                        saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
                 }) {
@@ -520,18 +659,34 @@ private fun ChattingScreen() {
                 .padding(innerPadding)
         ) {
             items(chatMessages.reversed()) { message ->
+                val isCurrentUserMessage = user?.uid == message.userId
+                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
-                    contentAlignment = Alignment.BottomEnd
+                    contentAlignment = alignment
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(Color.LightGray)
-                            .padding(8.dp)
-                    ) {
-                        Text(text = message)
+                    Column {
+                        if (!isCurrentUserMessage) {
+                            Text(text = message.userName ?: "")
+                        }
+                        Row {
+                            if (isCurrentUserMessage) {
+                                Text(text = message.uploadDate ?: "")
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(backgroundColor)
+                                    .padding(8.dp)
+                            ) {
+                                Text(text = message.message ?: "")
+                            }
+                            if (!isCurrentUserMessage) {
+                                Text(text = message.uploadDate ?: "")
+                            }
+                        }
                     }
                 }
             }
@@ -542,7 +697,7 @@ private fun ChattingScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalInfoScreen(navController: NavController) {
+fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit) {
 
     Scaffold(
         topBar = {
@@ -722,6 +877,16 @@ private fun MyBottomBara(navController: NavController) {
     }
 }
 
+@Composable
+fun LoginScreen(signInClicked: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        GoogleSignInButton(signInClicked)
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
