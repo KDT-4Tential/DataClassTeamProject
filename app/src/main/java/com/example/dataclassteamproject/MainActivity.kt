@@ -117,7 +117,7 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        FirebaseApp.initializeApp(this)
+//        FirebaseApp.initializeApp(this)
         setContent {
 
             DataClassTeamProjectTheme {
