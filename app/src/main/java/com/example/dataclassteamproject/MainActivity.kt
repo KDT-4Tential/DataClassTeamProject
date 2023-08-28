@@ -436,7 +436,7 @@ fun CalendarDay(
             Text(
                 text = memo,
                 color = Color.Black,
-                fontSize = 10.sp,
+                fontSize = 10.sp,   // 메모 글자 크기
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
@@ -690,13 +690,13 @@ private fun MyBottomBara(navController: NavController) {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    DataClassTeamProjectTheme {
-        ScheduleScreen(navController = rememberNavController(),
-            onPreviousMonthClick = {},
-            onNextMonthClick = {}
-        )
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun DefaultPreview() {
+//    DataClassTeamProjectTheme {
+//        ScheduleScreen(navController = rememberNavController(),
+//            onPreviousMonthClick = {},
+//            onNextMonthClick = {}
+//        )
+//    }
+//}
