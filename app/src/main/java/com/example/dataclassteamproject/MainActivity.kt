@@ -1,13 +1,17 @@
 package com.example.dataclassteamproject
 
+import android.app.Activity
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,11 +30,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -53,6 +57,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,9 +66,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -88,11 +94,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -104,6 +108,32 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var mAuth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
+
+    private val pickImageRequestCode = 101
+    var _imageBitmap: MutableState<ImageBitmap?> = mutableStateOf(null)
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val selectedImageUri = result.data?.data
+            val rotationAngle = getRotationAngle(selectedImageUri!!)
+            val androidBitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, selectedImageUri)
+            val rotatedBitmap = androidBitmap.rotate(rotationAngle)
+            _imageBitmap.value = rotatedBitmap.asImageBitmap()
+        }
+    }
+    // 이미지 회전 각도를 얻는 함수 추가
+    private fun getRotationAngle(uri: Uri): Int {
+        // 여기서 URI를 사용하여 회전 각도를 반환하는 로직을 작성하세요
+        // 예: MediaStore에서 EXIF 메타데이터를 사용하여 회전 각도 얻기
+        return 0 // 임시로 0 반환
+    }
+
+    // 비트맵 이미지 회전 함수 추가
+    private fun Bitmap.rotate(angle: Int): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle.toFloat())
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,7 +186,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = "schedule") {
+                NavHost(navController = navController, startDestination = startDestination) {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -170,7 +200,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("personal") {
-                        PersonalInfoScreen(navController, onClicked = { signOut(navController) })
+                        PersonalInfoScreen(navController, onClicked = { signOut(navController) }, _imageBitmap = _imageBitmap)
                     }
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
@@ -184,12 +214,6 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
-//                    composable("test") {
-//                        TestScreen()
-//                    }
-                    //추가해야할 스크린
-                    //채팅방
-                    //글작성
                 }
             }
         }
@@ -697,8 +721,10 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit) {
-
+fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit, _imageBitmap: MutableState<ImageBitmap?>) {
+    val imageSizeDp = 100.dp
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val onImageIconClick = { /* 이미지 클릭 시 수행할 액션 정의 */ }
     Scaffold(
         topBar = {
             MyTopBar("개인정보")
@@ -712,124 +738,64 @@ fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit) {
                 .fillMaxSize()
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {}
-//            if (imageBitmap.value != null) {
-//                Image(
-//                    bitmap = imageBitmap.value!!,
-//                    contentDescription = "User profile picture",
-//                    modifier = Modifier
-//                        .size(imageSizeDp)
-//                        .clip(RoundedCornerShape(20.dp))
-//                        .clickable {
-//                            onImageIconClick()
-//                        }
-//                )
-//            } else {
-//                Icon(
-//                    imageVector = Icons.Default.AccountCircle,
-//                    contentDescription = "Default user icon",
-//                    modifier = Modifier
-//                        .size(imageSizeDp)
-//                        .clip(RoundedCornerShape(20.dp))
-//                        .clickable {
-//                            onImageIconClick()
-//                        }
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            // Name Input
-//            OutlinedTextField(
-//                value = currentUser?.displayName ?: "",
-//                onValueChange = {},
-//                label = { Text("Name") },
-//                enabled = false
-//            )
-//
-//            Spacer(modifier = Modifier.height(8.dp))
-//
-//            // Email Input
-//            OutlinedTextField(
-//                value = currentUser?.email ?: "",
-//                onValueChange = {},
-//                label = { Text("E-mail") },
-//                enabled = false
-//            )
-//
-//            Spacer(modifier = Modifier.height(8.dp))
-//
-//            val context = LocalContext.current
-//            var phoneNumber by remember {
-//                mutableStateOf(loadPhoneNumber(context) ?: "")
-//            }
-//
-//            OutlinedTextField(
-//                value = phoneNumber,
-//                onValueChange = { phoneNumber = it },
-//                label = { Text("Phone Number") },
-//                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-//            )
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            Box(
-//                modifier = Modifier.fillMaxWidth(),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Row(
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    horizontalArrangement = Arrangement.Center,  // 이 부분이 중앙 정렬을 의미합니다.
-//                    modifier = Modifier
-//                ) {
-//                    Button(onClick = {
-//                        savePhoneNumber(context, phoneNumber)
-//                    }) {
-//                        Text("Save")
-//                    }
-//
-//                    Spacer(modifier = Modifier.width(8.dp))
-//
-//                    Button(onClick = {
-//                        phoneNumber = loadPhoneNumber(context) ?: ""
-//                    }) {
-//                        Text("Edit")
-//                    }
-//                }
-//            }
-//
-//            Spacer(modifier = Modifier.height(80.dp))
-//
-//            // Add Sign Out button
-//            Button(onClick = {
-//                onSignOutClick()
-//            }) {
-//                Text("Logout")
-//            }
-//        }
+        ) {
+            if (_imageBitmap.value != null) {
+                Image(
+                    bitmap = _imageBitmap.value!!,
+                    contentDescription = "User profile picture",
+                    modifier = Modifier
+                        .size(imageSizeDp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onImageIconClick() }
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Default user icon",
+                    modifier = Modifier
+                        .size(imageSizeDp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onImageIconClick() }
+                )
+            }
 
-//        Column(
-//            modifier = Modifier
-//                .padding(innerPadding)
-//                .fillMaxSize(),
-//            verticalArrangement = Arrangement.Center,
-//            horizontalAlignment = Alignment.CenterHorizontally
-//        ) {
-//            Column {
-//                Image(
-//                    painter = painterResource(id = R.drawable.ic_launcher_background),
-//                    contentDescription = "profile",
-//                    modifier = Modifier
-//                        .size(100.dp)
-//                        .clip(CircleShape)
-//                )
-//                Text(text = "이름")
-//                Text(text = "정보")
-//                Text(text = "정보")
-//                Text(text = "정보")
-//                Text(text = "정보")
-//            }
-//        }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = currentUser?.displayName ?: "",
+                onValueChange = {},
+                label = { Text("Name") },
+                enabled = false
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = currentUser?.email ?: "",
+                onValueChange = {},
+                label = { Text("E-mail") },
+                enabled = false
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) { }
+
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column {
+                    Text(text = "로그아웃", modifier = Modifier.clickable{ onClicked() })
+                }
+            }
+        }
     }
 }
 
