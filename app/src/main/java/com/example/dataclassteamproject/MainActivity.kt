@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -47,11 +46,11 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -66,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -75,12 +75,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -257,7 +258,8 @@ data class ChatMessage(
     val userId: String? = "UID 오류",
     val userName: String? = "이름 오류",
     val uploadDate: String? = "",
-    var profileString: String? = ""
+    val profileString: String? = "",
+    val imageUrl: String? = ""
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
@@ -289,6 +291,32 @@ fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
             // 에러 처리
         }
     })
+}
+
+fun uploadImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+    val storage = FirebaseStorage.getInstance()
+    val storageRef = storage.reference
+    val user = mAuth.currentUser
+
+    val imageRef = storageRef.child("images/${uri.lastPathSegment}")
+    imageRef.putFile(uri)
+        .addOnSuccessListener { taskSnapshot ->
+            // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
+            taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
+                val imageUrl = downloadUri.toString()
+                val chatMessage = ChatMessage(
+                    message = "이미지업로드",
+                    userId = user?.uid,
+                    userName = user?.displayName,
+                    imageUrl = imageUrl // imageUrl 설정
+                )
+                saveChatMessage(chatMessage)
+                onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
+            }
+        }
+        .addOnFailureListener {
+            // 업로드 실패 처리
+        }
 }
 
 @Composable
@@ -705,52 +733,88 @@ fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
 }
 
 @Composable
+fun ShowImageScreen(){
+
+}
+
+@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
+    var uploadedImageUrl by remember { mutableStateOf("") }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            uri?.let { uploadImage(it, mAuth,
+                onImageUploaded = {imageUrl ->
+                uploadedImageUrl = imageUrl
+            }) }
+        }
+    )
+
+
+
     loadChatMessages { messages ->
         chatMessages = messages
     }
     Scaffold(topBar = {
         TopAppBar(
             title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Text(text = "채팅방", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
+            },
+            navigationIcon = {
+                IconButton(
+                    onClick = {
+                        navController.navigate("dm")
+                    }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back button",
-                        modifier = Modifier.clickable { navController.navigate("dm") })
-
-                    Text(text = "채팅방", modifier = Modifier.weight(1f))
-                    Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
+                        contentDescription = "Back button"
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = { navController.navigate("showimage") }) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
                 }
             },
             //탑바 색바꾸기
-            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+//            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
         )
     }, bottomBar = {
         BottomAppBar(
-            containerColor = Color.Gray
+            containerColor = Color.White
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "추가기능")
-                BasicTextField(
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "추가기능",
+                    modifier = Modifier.clickable {
+                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }
+                )
+                TextField(
                     value = chatmessage,
                     onValueChange = { chatmessage = it },
                     modifier = Modifier
                         .weight(1f) // 여기서 비율을 조정
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .background(Color.White),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 30.sp)
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
                 )
                 Icon(imageVector = Icons.Default.Send, contentDescription = "메세지 보내기버튼",
                     modifier = Modifier.clickable {
@@ -781,7 +845,8 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
+                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 val currentDate = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
                 val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
@@ -810,9 +875,6 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalAlignment = alignment
                 ) {
-
-                    //만약 하루가 지나면 divider가 그려짐
-
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -829,18 +891,39 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                         }
                         Column {
                             if (!isCurrentUserMessage) {
-                                Text(text = message.userName ?: "", fontSize = 13.sp)
+                                Text(
+                                    text = message.userName ?: "",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                             Row {
                                 if (isCurrentUserMessage) {
-                                    Text(text = message.uploadDate ?: "", fontSize = 8.sp, color = Color.LightGray)
+                                    Text(
+                                        text = message.uploadDate ?: "",
+                                        fontSize = 8.sp,
+                                        color = Color.LightGray
+                                    )
                                 }
                                 Box(
                                     modifier = Modifier
                                         .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                                         .padding(8.dp)
                                 ) {
-                                    Text(text = message.message ?: "", fontSize = 16.sp)
+                                    if (message.imageUrl != null && message.imageUrl == uploadedImageUrl) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(message.imageUrl),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(100.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                        )
+                                    }
+                                    Text(
+                                        text = message.message ?: "",
+                                        fontSize = 16.sp,
+                                        color = textColor
+                                    )
                                 }
                                 if (!isCurrentUserMessage) {
                                     Text(
@@ -854,6 +937,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                     }
                 }
             }
+
         }
     }
 }
