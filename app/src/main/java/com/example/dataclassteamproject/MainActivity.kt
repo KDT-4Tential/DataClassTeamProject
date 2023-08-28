@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -47,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -260,6 +262,7 @@ fun CalendarComposable(
     var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
     var showDialog by remember { mutableStateOf(false) }
 
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -308,6 +311,7 @@ fun CalendarComposable(
         val daysInMonth = (1..lastDayOfMonth.dayOfMonth).toList()
         val emptyDaysBefore = (0 until firstDayOfMonth.dayOfWeek.value).toList()
 
+
         LazyVerticalGrid(  // 달력에 날짜들을 그리는 코드
             GridCells.Fixed(7), // 각 행당 7개의 열을 가지도록 설정
             contentPadding = PaddingValues(4.dp),
@@ -337,6 +341,7 @@ fun CalendarComposable(
                         onDateSelected(date)
                         showDialog = true
                     },
+                    showDialog = showDialog,
                     memo = memo
                 )
             }
@@ -361,38 +366,68 @@ fun CalendarComposable(
     }
 }
 
+enum class PublicHoliday(val month: Int, val day: Int, val holidayname: String) {
+    NEW_YEAR(1, 1, "새해 첫날"),
+    KOREAN_NEW_YEAR(1,22,"설날"),
+    INDEPENDENCE_MOVEMENT_DAY(3,1,"삼일절"),
+    CHILDRENS_DAY(5,5,"어린이날"),
+    BUDDA_BIRTH_DAY(5,27,"부처님오신날"),
+    MEMORIAL_DAY(6,6,"현충일"),
+    INDEPENDENCE_DAY(8, 15, "광복절"),
+    THANKSGIVING_DAY(9,29,"추석"),
+    NATIONAL_FOUNDATION_DAY(10,3,"개천절"),
+    HANGUL_PROCLAMATION_DAY(10,9,"한글날"),
+    CHRISTMAS(12,25,"크리스마스")
+}
+
 
 @Composable
 fun CalendarDay(
     date: LocalDate,
     isSelected: Boolean,
     onDateSelected: (LocalDate) -> Unit,
+    showDialog: Boolean,
     memo: String?,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
-    Box(
+    val dialogState = remember { mutableStateOf(showDialog) }
+    val publicHoliday = PublicHoliday.values().find { it.month == date.monthValue && it.day == date.dayOfMonth }
+    val isPublicHoliday = publicHoliday != null
+
+    Box(           //날짜 박스
         modifier = Modifier
             .size(width = 30.dp, height = 110.dp)
-            .clip(RectangleShape)
+            .clip(RoundedCornerShape(8.dp))
             .then(
-                if (isSelected) Modifier.border(1.dp, Color.LightGray, shape = RectangleShape)
+                if (isSelected) Modifier.border(1.dp, Color.LightGray, shape = RoundedCornerShape(8.dp))
                 else Modifier
             )
             .clickable {
-                if (!isSelected) {
-                    onDateSelected(date)
-                }
-                showDialog = !showDialog
+                onDateSelected(date)
+                dialogState.value = true
             },
         contentAlignment = Alignment.TopCenter
     ) {
-        Text(
+        Text(    // 날짜
             text = date.dayOfMonth.toString(),
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) Color.White else Color.Black,
-            modifier = Modifier.background(if (isSelected) Color.Red else Color.Transparent)
+            color = if(isPublicHoliday) Color.Red else Color.Black,
+            modifier = Modifier.background(if (isSelected) Color.White else Color.Transparent)
+                .padding(vertical = 2.dp, horizontal = 4.dp)
         )
-        if (memo != null && memo.isNotEmpty()) {
+        if (isPublicHoliday) {  // 공휴일 표시코드
+            Text(
+                text = publicHoliday?.holidayname ?: "",
+                color = Color.White,
+                fontSize = 8.sp,
+                modifier = Modifier
+                    .background(Color.Red)
+                    .padding(2.dp)
+                    .align(Alignment.BottomCenter)
+            )
+        }
+
+        if (memo != null && memo.isNotEmpty()) {  // 달력에 표시되는 메모 부분
             Text(
                 text = memo,
                 color = Color.Black,
@@ -407,7 +442,7 @@ fun CalendarDay(
     }
 }
 
-
+// 메모 다이얼로그
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemoDialog(
@@ -635,13 +670,13 @@ private fun MyBottomBara(navController: NavController) {
 }
 
 
-//@Preview(showBackground = true)
-//@Composable
-//fun DefaultPreview() {
-//    DataClassTeamProjectTheme {
-//        ScheduleScreen(navController = rememberNavController(),
-//            onPreviousMonthClick = {},
-//            onNextMonthClick = {}
-//        )
-//    }
-//}
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    DataClassTeamProjectTheme {
+        ScheduleScreen(navController = rememberNavController(),
+            onPreviousMonthClick = {},
+            onNextMonthClick = {}
+        )
+    }
+}
