@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,6 +51,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -144,7 +146,7 @@ class MainActivity : ComponentActivity() {
                         //여기에 보드뷰 스크린을 넣어주세요
                     }
                     composable("chatting") {
-                        ChattingScreen(mAuth)
+                        ChattingScreen(navController, mAuth)
                     }
                     composable("login") {
                         LoginScreen(
@@ -152,9 +154,9 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
-//                    composable("test") {
-//                        TestScreen()
-//                    }
+                    composable("test") {
+                        TestScreen()
+                    }
                     //추가해야할 스크린
                     //글작성
                 }
@@ -225,7 +227,7 @@ data class ChatMessage(
     val userId: String? = "UID 오류",
     val userName: String? = "이름 오류",
     val uploadDate: String? = "",
-    var downloadUrl: String? = ""
+    var profileString: String? = ""
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
@@ -276,10 +278,11 @@ fun TestScreen() {
     }
     selectUri?.let { uri ->
         uploadFileToFirebaseStorage(
-        fileUri = uri,
-        onComplete = {
+            fileUri = uri,
+            onComplete = {
 
-        }) }
+            })
+    }
 }
 
 fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
@@ -380,7 +383,7 @@ fun ScheduleScreen(navController: NavController) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ChattingScreen(mAuth: FirebaseAuth) {
+private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
@@ -397,7 +400,9 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(onClick = { /*TODO*/ }) {
+                    Button(onClick = {
+                        navController.navigate("dm")
+                    }) {
                         Text(text = "back")
                     }
                     Text(text = "채팅방", modifier = Modifier.weight(1f))
@@ -421,12 +426,18 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 Button(onClick = { }) {
                     Text(text = "+")
                 }
-                TextField(value = chatmessage, onValueChange = { chatmessage = it })
+                TextField(value = chatmessage, onValueChange = { chatmessage = it }, modifier = Modifier.weight(1f))
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
                         val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                         val newChatMessage =
-                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+                            ChatMessage(
+                                message = chatmessage,
+                                userId = user?.uid,
+                                userName = user?.displayName,
+                                uploadDate = currentDate,
+                                profileString = user?.photoUrl.toString()
+                            )
                         saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
@@ -447,6 +458,28 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
                 val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
+
+                val currentDate = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
+                val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+                // 00시가 되었을 때만 Divider와 날짜 추가
+                if (currentTime == "00:00") {
+                    Divider(
+                        color = Color.Gray,
+                        thickness = 1.dp,
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 8.dp)
+                            .fillMaxWidth()
+                    )
+                    Text(
+                        text = currentDate,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.LightGray)
+                            .padding(4.dp)
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -454,22 +487,35 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                     contentAlignment = alignment
                 ) {
                     Column {
+                        //만약 하루가 지나면 divider가 그려짐
                         if (!isCurrentUserMessage) {
                             Text(text = message.userName ?: "")
                         }
                         Row {
-                            if (isCurrentUserMessage) {
-                                Text(text = message.uploadDate ?: "")
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .background(backgroundColor)
-                                    .padding(8.dp)
-                            ) {
-                                Text(text = message.message ?: "")
-                            }
+
                             if (!isCurrentUserMessage) {
-                                Text(text = message.uploadDate ?: "")
+                                val selectedUri = message.profileString?.let { Uri.parse(it) }
+                                Column {
+                                    AsyncImage(
+                                        model = selectedUri,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                            Row {
+                                if (isCurrentUserMessage) {
+                                    Text(text = message.uploadDate ?: "")
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(backgroundColor)
+                                        .padding(8.dp)
+                                ) {
+                                    Text(text = message.message ?: "")
+                                }
+                                if (!isCurrentUserMessage) {
+                                    Text(text = message.uploadDate ?: "")
+                                }
                             }
                         }
                     }
