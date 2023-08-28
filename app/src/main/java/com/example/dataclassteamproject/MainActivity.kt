@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -27,7 +28,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.BottomAppBar
@@ -36,6 +39,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -549,26 +554,127 @@ fun PersonalInfoScreen(navController: NavController) {
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
+                .fillMaxSize()
+                .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Column {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
-                    contentDescription = "profile",
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                )
-                Text(text = "이름")
-                Text(text = "정보")
-                Text(text = "정보")
-                Text(text = "정보")
-                Text(text = "정보")
-            }
-        }
+        ) {}
+//            if (imageBitmap.value != null) {
+//                Image(
+//                    bitmap = imageBitmap.value!!,
+//                    contentDescription = "User profile picture",
+//                    modifier = Modifier
+//                        .size(imageSizeDp)
+//                        .clip(RoundedCornerShape(20.dp))
+//                        .clickable {
+//                            onImageIconClick()
+//                        }
+//                )
+//            } else {
+//                Icon(
+//                    imageVector = Icons.Default.AccountCircle,
+//                    contentDescription = "Default user icon",
+//                    modifier = Modifier
+//                        .size(imageSizeDp)
+//                        .clip(RoundedCornerShape(20.dp))
+//                        .clickable {
+//                            onImageIconClick()
+//                        }
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            // Name Input
+//            OutlinedTextField(
+//                value = currentUser?.displayName ?: "",
+//                onValueChange = {},
+//                label = { Text("Name") },
+//                enabled = false
+//            )
+//
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            // Email Input
+//            OutlinedTextField(
+//                value = currentUser?.email ?: "",
+//                onValueChange = {},
+//                label = { Text("E-mail") },
+//                enabled = false
+//            )
+//
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            val context = LocalContext.current
+//            var phoneNumber by remember {
+//                mutableStateOf(loadPhoneNumber(context) ?: "")
+//            }
+//
+//            OutlinedTextField(
+//                value = phoneNumber,
+//                onValueChange = { phoneNumber = it },
+//                label = { Text("Phone Number") },
+//                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            Box(
+//                modifier = Modifier.fillMaxWidth(),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.Center,  // 이 부분이 중앙 정렬을 의미합니다.
+//                    modifier = Modifier
+//                ) {
+//                    Button(onClick = {
+//                        savePhoneNumber(context, phoneNumber)
+//                    }) {
+//                        Text("Save")
+//                    }
+//
+//                    Spacer(modifier = Modifier.width(8.dp))
+//
+//                    Button(onClick = {
+//                        phoneNumber = loadPhoneNumber(context) ?: ""
+//                    }) {
+//                        Text("Edit")
+//                    }
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.height(80.dp))
+//
+//            // Add Sign Out button
+//            Button(onClick = {
+//                onSignOutClick()
+//            }) {
+//                Text("Logout")
+//            }
+//        }
+
+//        Column(
+//            modifier = Modifier
+//                .padding(innerPadding)
+//                .fillMaxSize(),
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Column {
+//                Image(
+//                    painter = painterResource(id = R.drawable.ic_launcher_background),
+//                    contentDescription = "profile",
+//                    modifier = Modifier
+//                        .size(100.dp)
+//                        .clip(CircleShape)
+//                )
+//                Text(text = "이름")
+//                Text(text = "정보")
+//                Text(text = "정보")
+//                Text(text = "정보")
+//                Text(text = "정보")
+//            }
+//        }
     }
 }
 
