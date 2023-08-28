@@ -303,8 +303,7 @@ data class ChatMessage(
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -520,30 +519,7 @@ fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(navController: NavController) {
-    Scaffold(topBar = {
-        MyTopBar("home")
-    }, bottomBar = {
-        MyBottomBara(navController)
-    }) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            Column {
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-            }
-        }
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -900,6 +876,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
     loadChatMessages { messages ->
         chatMessages = messages
     }
+
     Scaffold(topBar = {
         TopAppBar(
             title = {
