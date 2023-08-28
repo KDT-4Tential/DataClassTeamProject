@@ -25,17 +25,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -43,6 +47,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,12 +55,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +68,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -79,10 +80,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -91,10 +92,10 @@ import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -118,7 +119,7 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        FirebaseApp.initializeApp(this)
+//        FirebaseApp.initializeApp(this)
         setContent {
 
             DataClassTeamProjectTheme {
@@ -166,10 +167,7 @@ class MainActivity : ComponentActivity() {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen(navController = rememberNavController(),
-                            onPreviousMonthClick = {},
-                            onNextMonthClick = {}
-                        )
+                        ScheduleScreen(navController = navController)
                     }
                     composable("personal") {
                         PersonalInfoScreen(navController, onClicked = { signOut(navController) })
@@ -190,9 +188,9 @@ class MainActivity : ComponentActivity() {
                         TestScreen()
                     }
                     //추가해야할 스크린
-                    //채팅방
                     //글작성
                 }
+
             }
         }
     }
@@ -263,8 +261,7 @@ data class ChatMessage(
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -273,8 +270,7 @@ fun saveChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -399,9 +395,7 @@ fun DmScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
-    navController: NavController,
-    onPreviousMonthClick: () -> Unit,
-    onNextMonthClick: () -> Unit
+    navController: NavController
 ) {
     Scaffold(
         topBar = {
@@ -427,11 +421,9 @@ fun ScheduleScreen(
                 },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
-                    onPreviousMonthClick()
                 },
                 onNextMonthClick = {
                     selectedDate = selectedDate.plusMonths(1)
-                    onNextMonthClick()
                 }
             )
         }
@@ -600,9 +592,9 @@ fun CalendarDay(
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = if (isPublicHoliday) Color.Red
-                    else if (isFirstInRow) Color.Red
-                    else if (isLastInRow) Color.Blue
-                    else Color.Black,
+            else if (isFirstInRow) Color.Red
+            else if (isLastInRow) Color.Blue
+            else Color.Black,
             modifier = Modifier
                 .background(if (isSelected) Color.White else Color.Transparent)
                 .padding(vertical = 2.dp, horizontal = 4.dp)
@@ -718,7 +710,6 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
-
     loadChatMessages { messages ->
         chatMessages = messages
     }
@@ -730,15 +721,13 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(onClick = {
-                        navController.navigate("dm")
-                    }) {
-                        Text(text = "back")
-                    }
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back button",
+                        modifier = Modifier.clickable { navController.navigate("dm") })
+
                     Text(text = "채팅방", modifier = Modifier.weight(1f))
-                    Button(onClick = { /*TODO*/ }) {
-                        Text(text = "검색")
-                    }
+                    Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                 }
             },
             //탑바 색바꾸기
@@ -753,27 +742,32 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = { }) {
-                    Text(text = "+")
-                }
-                TextField(value = chatmessage, onValueChange = { chatmessage = it }, modifier = Modifier.weight(1f))
-                Button(onClick = {
-                    if (chatmessage.isNotEmpty()) {
-                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                        val newChatMessage =
-                            ChatMessage(
-                                message = chatmessage,
-                                userId = user?.uid,
-                                userName = user?.displayName,
-                                uploadDate = currentDate,
-                                profileString = user?.photoUrl.toString()
-                            )
-                        saveChatMessage(newChatMessage)
-                        chatmessage = ""
-                    }
-                }) {
-                    Text(text = "보내기")
-                }
+                Icon(imageVector = Icons.Default.Add, contentDescription = "추가기능")
+                BasicTextField(
+                    value = chatmessage,
+                    onValueChange = { chatmessage = it },
+                    modifier = Modifier
+                        .weight(1f) // 여기서 비율을 조정
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(Color.White),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 30.sp)
+                )
+                Icon(imageVector = Icons.Default.Send, contentDescription = "메세지 보내기버튼",
+                    modifier = Modifier.clickable {
+                        if (chatmessage.isNotEmpty()) {
+                            val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                            val newChatMessage =
+                                ChatMessage(
+                                    message = chatmessage,
+                                    userId = user?.uid,
+                                    userName = user?.displayName,
+                                    uploadDate = currentDate,
+                                    profileString = user?.photoUrl.toString()
+                                )
+                            saveChatMessage(newChatMessage)
+                            chatmessage = ""
+                        }
+                    })
             }
         }
 
@@ -786,7 +780,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
         ) {
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
                 val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
 
                 val currentDate = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
@@ -810,41 +804,50 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                     )
                 }
 
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(end = 20.dp, top = 10.dp, bottom = 10.dp),
-                    contentAlignment = alignment
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalAlignment = alignment
                 ) {
-                    Column {
-                        //만약 하루가 지나면 divider가 그려짐
-                        if (!isCurrentUserMessage) {
-                            Text(text = message.userName ?: "")
-                        }
-                        Row {
 
+                    //만약 하루가 지나면 divider가 그려짐
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (!isCurrentUserMessage) {
+                            val selectedUri = message.profileString?.let { Uri.parse(it) }
+                            AsyncImage(
+                                model = selectedUri,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                            )
+                        }
+                        Column {
                             if (!isCurrentUserMessage) {
-                                val selectedUri = message.profileString?.let { Uri.parse(it) }
-                                Column {
-                                    AsyncImage(
-                                        model = selectedUri,
-                                        contentDescription = null,
-                                    )
-                                }
+                                Text(text = message.userName ?: "", fontSize = 13.sp)
                             }
                             Row {
                                 if (isCurrentUserMessage) {
-                                    Text(text = message.uploadDate ?: "")
+                                    Text(text = message.uploadDate ?: "", fontSize = 8.sp, color = Color.LightGray)
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .background(backgroundColor)
+                                        .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                                         .padding(8.dp)
                                 ) {
-                                    Text(text = message.message ?: "")
+                                    Text(text = message.message ?: "", fontSize = 16.sp)
                                 }
                                 if (!isCurrentUserMessage) {
-                                    Text(text = message.uploadDate ?: "")
+                                    Text(
+                                        text = message.uploadDate ?: "",
+                                        fontSize = 8.sp,
+                                        color = Color.LightGray
+                                    )
                                 }
                             }
                         }
@@ -860,14 +863,11 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
 @Composable
 fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit) {
 
-    Scaffold(
-        topBar = {
-            MyTopBar("개인정보")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
-    ) { innerPadding ->
+    Scaffold(topBar = {
+        MyTopBar("개인정보")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -909,9 +909,7 @@ private fun MyBottomBara(navController: NavController) {
         containerColor = Color.Gray
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()
         ) {
             Button(onClick = {
                 navController.navigate("home")
