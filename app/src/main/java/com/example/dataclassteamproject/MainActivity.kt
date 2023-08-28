@@ -1,11 +1,13 @@
 package com.example.dataclassteamproject
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -60,6 +62,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -149,6 +152,9 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
+//                    composable("test") {
+//                        TestScreen()
+//                    }
                     //추가해야할 스크린
                     //글작성
                 }
@@ -194,16 +200,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun LoginScreen(signInClicked: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        GoogleSignInButton(signInClicked)
-    }
-}
 
 @Composable
 fun GoogleSignInButton(
@@ -228,7 +224,8 @@ data class ChatMessage(
     val message: String? = "메시지 오류",
     val userId: String? = "UID 오류",
     val userName: String? = "이름 오류",
-    val uploadDate: String? = ""
+    val uploadDate: String? = "",
+    var downloadUrl: String? = ""
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
@@ -236,10 +233,9 @@ fun saveChatMessage(chatMessage: ChatMessage) {
     val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
-
-
     newMessageRef.setValue(chatMessage)
 }
+
 
 fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
     val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
@@ -261,6 +257,51 @@ fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
             // 에러 처리
         }
     })
+}
+
+@Composable
+fun TestScreen() {
+    var selectUri by remember { mutableStateOf<Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        //url == 유니크한 경로
+        onResult = { uri ->
+            selectUri = uri
+        }
+    )
+    Button(onClick = {
+        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }) {
+        Text(text = "이미지 uri 가져오기")
+    }
+    selectUri?.let { uri ->
+        uploadFileToFirebaseStorage(
+        fileUri = uri,
+        onComplete = {
+
+        }) }
+}
+
+fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
+    val storageRef = FirebaseStorage.getInstance().reference
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val fileName = "file_$timeStamp" // 현재 날짜와 시간을 사용한 고유한 파일 이름 생성
+    val fileReference = storageRef.child(fileName)
+
+    val uploadTask = fileReference.putFile(fileUri)
+    uploadTask.continueWithTask { task ->
+        if (!task.isSuccessful) {
+            task.exception?.let {
+                throw it
+            }
+        }
+        fileReference.downloadUrl
+    }.addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            val downloadUri = task.result.toString()
+            onComplete(downloadUri) // 업로드 완료 시 다운로드 URL 전달
+        }
+    }
 }
 
 
@@ -377,7 +418,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = { /*TODO*/ }) {
+                Button(onClick = { }) {
                     Text(text = "+")
                 }
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
@@ -417,7 +458,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                             Text(text = message.userName ?: "")
                         }
                         Row {
-                            if (isCurrentUserMessage){
+                            if (isCurrentUserMessage) {
                                 Text(text = message.uploadDate ?: "")
                             }
                             Box(
@@ -427,7 +468,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                             ) {
                                 Text(text = message.message ?: "")
                             }
-                            if (!isCurrentUserMessage){
+                            if (!isCurrentUserMessage) {
                                 Text(text = message.uploadDate ?: "")
                             }
                         }
@@ -515,6 +556,16 @@ private fun MyBottomBara(navController: NavController) {
     }
 }
 
+@Composable
+fun LoginScreen(signInClicked: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        GoogleSignInButton(signInClicked)
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
