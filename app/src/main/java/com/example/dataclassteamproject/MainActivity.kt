@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -323,10 +324,15 @@ fun CalendarComposable(
                 Spacer(modifier = Modifier.size(30.dp))
             }
 
-            items(daysInMonth) { day ->
+            itemsIndexed(daysInMonth) { index, day ->
                 val date = selectedDate.withDayOfMonth(day)
                 val isSelected = date == selectedDate
                 var memo = memoMap[date] ?: ""
+
+                val dayOfWeekIndex = date.dayOfWeek.value - 1
+                val isFirstInRow = dayOfWeekIndex == 6
+                val isLastInRow = dayOfWeekIndex == 5
+
                 // Firebase에서 메모 읽어오기
                 getMemoFromFirebase(date) { firebaseMemo ->
                     if (firebaseMemo.isNotEmpty())
@@ -342,7 +348,9 @@ fun CalendarComposable(
                         showDialog = true
                     },
                     showDialog = showDialog,
-                    memo = memo
+                    memo = memo,
+                    isFirstInRow = isFirstInRow,
+                    isLastInRow = isLastInRow
                 )
             }
         }
@@ -366,20 +374,6 @@ fun CalendarComposable(
     }
 }
 
-enum class PublicHoliday(val month: Int, val day: Int, val holidayname: String) {
-    NEW_YEAR(1, 1, "새해 첫날"),
-    KOREAN_NEW_YEAR(1,22,"설날"),
-    INDEPENDENCE_MOVEMENT_DAY(3,1,"삼일절"),
-    CHILDRENS_DAY(5,5,"어린이날"),
-    BUDDA_BIRTH_DAY(5,27,"부처님오신날"),
-    MEMORIAL_DAY(6,6,"현충일"),
-    INDEPENDENCE_DAY(8, 15, "광복절"),
-    THANKSGIVING_DAY(9,29,"추석"),
-    NATIONAL_FOUNDATION_DAY(10,3,"개천절"),
-    HANGUL_PROCLAMATION_DAY(10,9,"한글날"),
-    CHRISTMAS(12,25,"크리스마스")
-}
-
 
 @Composable
 fun CalendarDay(
@@ -388,9 +382,12 @@ fun CalendarDay(
     onDateSelected: (LocalDate) -> Unit,
     showDialog: Boolean,
     memo: String?,
+    isFirstInRow: Boolean,
+    isLastInRow: Boolean
 ) {
     val dialogState = remember { mutableStateOf(showDialog) }
-    val publicHoliday = PublicHoliday.values().find { it.month == date.monthValue && it.day == date.dayOfMonth }
+    val publicHoliday =
+        PublicHoliday.values().find { it.month == date.monthValue && it.day == date.dayOfMonth }
     val isPublicHoliday = publicHoliday != null
 
     Box(           //날짜 박스
@@ -398,7 +395,11 @@ fun CalendarDay(
             .size(width = 30.dp, height = 110.dp)
             .clip(RoundedCornerShape(8.dp))
             .then(
-                if (isSelected) Modifier.border(1.dp, Color.LightGray, shape = RoundedCornerShape(8.dp))
+                if (isSelected) Modifier.border(
+                    1.dp,
+                    Color.LightGray,
+                    shape = RoundedCornerShape(8.dp)
+                )
                 else Modifier
             )
             .clickable {
@@ -411,8 +412,12 @@ fun CalendarDay(
             text = date.dayOfMonth.toString(),
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = if(isPublicHoliday) Color.Red else Color.Black,
-            modifier = Modifier.background(if (isSelected) Color.White else Color.Transparent)
+            color = if (isPublicHoliday) Color.Red
+                    else if (isFirstInRow) Color.Red
+                    else if (isLastInRow) Color.Blue
+                    else Color.Black,
+            modifier = Modifier
+                .background(if (isSelected) Color.White else Color.Transparent)
                 .padding(vertical = 2.dp, horizontal = 4.dp)
         )
         if (isPublicHoliday) {  // 공휴일 표시코드
@@ -440,6 +445,21 @@ fun CalendarDay(
             )
         }
     }
+}
+
+//공휴일 모음
+enum class PublicHoliday(val month: Int, val day: Int, val holidayname: String) {
+    NEW_YEAR(1, 1, "새해 첫날"),
+    KOREAN_NEW_YEAR(1, 22, "설날"),
+    INDEPENDENCE_MOVEMENT_DAY(3, 1, "삼일절"),
+    CHILDRENS_DAY(5, 5, "어린이날"),
+    BUDDA_BIRTH_DAY(5, 27, "부처님오신날"),
+    MEMORIAL_DAY(6, 6, "현충일"),
+    INDEPENDENCE_DAY(8, 15, "광복절"),
+    THANKSGIVING_DAY(9, 29, "추석"),
+    NATIONAL_FOUNDATION_DAY(10, 3, "개천절"),
+    HANGUL_PROCLAMATION_DAY(10, 9, "한글날"),
+    CHRISTMAS(12, 25, "크리스마스")
 }
 
 // 메모 다이얼로그
