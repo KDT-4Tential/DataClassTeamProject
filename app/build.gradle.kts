@@ -67,14 +67,6 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation(platform("com.google.firebase:firebase-bom:32.2.2"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-database-ktx")
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation ("com.google.android.gms:play-services-auth:20.6.0")
-    implementation("com.google.firebase:firebase-auth-ktx:22.1.1")
-    implementation("com.google.firebase:firebase-firestore-ktx:24.7.1")
-    implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
 
     val nav_version = "2.6.0"
 
@@ -85,5 +77,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation ("com.google.android.gms:play-services-auth:20.6.0")
+
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 }
