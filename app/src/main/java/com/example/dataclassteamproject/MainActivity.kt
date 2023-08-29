@@ -17,6 +17,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,12 +42,16 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +65,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +78,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -102,12 +110,47 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
+
+fun saveUserStatusToFirestore(userId: String, status: String) {
+    val db = FirebaseFirestore.getInstance()
+    val userStatus = hashMapOf("status" to status)
+    db.collection("users").document(userId).set(userStatus)
+        .addOnSuccessListener {
+            Log.d("Firestore", "User status successfully written!")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error writing user status", e)
+        }
+}
+
+fun getUserStatusFromFirestore(userId: String, onStatusFetched: (String) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    val docRef = db.collection("users").document(userId)
+    docRef.get()
+        .addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                val status = document.getString("status") ?: "미팅 중"
+                onStatusFetched(status)
+            } else {
+                Log.d("Firestore", "No such document")
+            }
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error getting user status", e)
+        }
+}
+
 
 class MainActivity : ComponentActivity() {
 
@@ -121,15 +164,18 @@ class MainActivity : ComponentActivity() {
     private val pickImageRequestCode = 101
     var _imageBitmap: MutableState<ImageBitmap?> = mutableStateOf(null)
 
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val selectedImageUri = result.data?.data
-            val rotationAngle = getRotationAngle(selectedImageUri!!)
-            val androidBitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, selectedImageUri)
-            val rotatedBitmap = androidBitmap.rotate(rotationAngle)
-            _imageBitmap.value = rotatedBitmap.asImageBitmap()
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val selectedImageUri = result.data?.data
+                val rotationAngle = getRotationAngle(selectedImageUri!!)
+                val androidBitmap =
+                    MediaStore.Images.Media.getBitmap(this.contentResolver, selectedImageUri)
+                val rotatedBitmap = androidBitmap.rotate(rotationAngle)
+                _imageBitmap.value = rotatedBitmap.asImageBitmap()
+            }
         }
-    }
+
     // 이미지 회전 각도를 얻는 함수 추가
     private fun getRotationAngle(uri: Uri): Int {
         // 여기서 URI를 사용하여 회전 각도를 반환하는 로직을 작성하세요
@@ -204,13 +250,15 @@ class MainActivity : ComponentActivity() {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen(navController = rememberNavController(),
-                            onPreviousMonthClick = {},
-                            onNextMonthClick = {}
-                        )
+                        ScheduleScreen(navController = navController)
                     }
                     composable("personal") {
-                        PersonalInfoScreen(navController, onClicked = { signOut(navController) }, _imageBitmap = _imageBitmap)
+                        PersonalInfoScreen(
+                            navController,
+                            onClicked = { signOut(navController) },
+                            _imageBitmap = _imageBitmap,
+                            onPickImage = {  }
+                        )
                     }
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
@@ -225,12 +273,13 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
-//                    composable("test") {
-//                        TestScreen()
-//                    }
-                    //추가해야할 스크린
-                    //채팅방
-                    //글작성
+                    composable("homeScreenRoute") { HomeScreen(navController) }
+//                    composable("lunchMenuScreenRoute") { LunchMenuScreen() }
+//                    composable("details") { DetailsScreen(navController) }
+//                    composable("next_destination/{selectedMenu}") { backStackEntry ->
+//                        val selectedMenu = backStackEntry.arguments?.getString("selectedMenu") ?: ""
+//                        //동적인 경로에서 전달된 selectedMenu 값을 가져옵니다. 해당 값이 없으면 빈 문자열을 사용
+//                        NextScreen(navController, selectedMenu)
                 }
 
             }
@@ -312,7 +361,8 @@ fun saveChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -336,12 +386,12 @@ fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
     val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
 
     Scaffold(
@@ -357,7 +407,7 @@ fun HomeScreen(navController: NavController) {
                 actions = {
                     IconButton(onClick = { navController.navigate("newboard") }) {
                         Image(
-                            painter = painterResource(id = R.drawable.top_addboard),
+                            painter = painterResource(id = R.drawable.ic_android_black_24dp),
                             contentDescription = null,
                             modifier = Modifier.size(35.dp)
                         )
@@ -376,10 +426,20 @@ fun HomeScreen(navController: NavController) {
                     .fillMaxSize()
             ) {
                 Column {
-                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                    HomeBoardTitle(icon = R.drawable.middle_announcementboard, boardtitle = "공지게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_lunch, boardtitle = "점심메뉴게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_board, boardtitle = "내 게시판")
+//                    HomeTitle(categorytitle = "게시판")
+                    HomeBoardTitle(
+                        icon = R.drawable.ic_android_black_24dp,
+                        boardtitle = "공지게시판",
+                        onClick = {})
+                    HomeBoardTitle(
+                        icon = R.drawable.ic_android_black_24dp,
+                        boardtitle = "점심메뉴게시판"
+                    )
+                    { navController.navigate("lunchMenuScreenRoute") }
+                    HomeBoardTitle(
+                        icon = R.drawable.ic_android_black_24dp,
+                        boardtitle = "내 게시판",
+                        onClick = {})
                     Spacer(modifier = Modifier.height(150.dp))
                 }
                 Divider(
@@ -388,26 +448,234 @@ fun HomeScreen(navController: NavController) {
                         .fillMaxWidth()
                         .width(0.5.dp)
                 )
-                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
+//                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
                 HomeBoardTitle(
-                    icon = R.drawable.middle_timer,
-                    boardtitle = "회의 시간 타이머"
+                    icon = R.drawable.ic_android_black_24dp,
+                    boardtitle = "점심메뉴게시판",
+                    onClick = { navController.navigate("lunchMenuScreenRoute") }
                 )
             }
         }
     }
 }
 
+//    @Composable
+//    fun LunchMenuScreen() {
+//        Surface(
+//            modifier = Modifier.fillMaxSize(),
+//            color = MaterialTheme.colorScheme.background
+//        ) {
+//            Column(
+//                modifier = Modifier.fillMaxSize(),
+//                verticalArrangement = Arrangement.Center,
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Box(
+//                    modifier = Modifier
+//                ) {
+//                    Text("아래의 버튼을 눌러 시작하세요!")
+//                }
+//                Spacer(modifier = Modifier.height(16.dp))
+//                Button(
+//                    onClick = { navController.navigate("details") }, //navController.navigate("details")를 호출하여 "details" 목적지로 이동
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+//                ) {
+//                    Text("메뉴 추천 시작!", color = Color.Black)
+//                }
+//            }
+//        }
+//    }
+//
+//    @Composable
+//    fun DetailsScreen(navController: NavController) {
+//        var selectedMenu by remember { mutableStateOf("") }
+//        val context =
+//            LocalContext.current
+//        val database = AppDatabase.getDatabase(context)
+//
+//
+//        val selectedMenuDao = database.selectedMenuDao()
+//
+//        val storedSelectedMenu: SelectedMenu? = runBlocking {
+//
+//            selectedMenuDao.getSelectedMenu()
+//        }
+//
+//        if (storedSelectedMenu != null) {
+//            selectedMenu = storedSelectedMenu.menu
+//        } else if (selectedMenu.isEmpty()) {
+//            val menuList = listOf("한식", "양식", "일식", "중식")
+//            selectedMenu = menuList.random()
+//        }
+//
+//        val buttonText = if (selectedMenu.isNotEmpty()) {
+//            "${selectedMenu}이 뽑혔습니다!"
+//        } else {
+//            "뽑혔습니다!"
+//        }
+//
+//        Surface(
+//            modifier = Modifier.fillMaxSize(),
+//            color = MaterialTheme.colorScheme.background
+//        ) {
+//            Column(
+//                modifier = Modifier.fillMaxSize(),
+//                verticalArrangement = Arrangement.Center,
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Greeting(buttonText, fontWeight = FontWeight.Bold)
+//                Spacer(modifier = Modifier.height(16.dp))
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.Center
+//                ) {
+//                    Button(
+//                        onClick = { navController.navigate("home") }  // "뒤로" 버튼을 클릭하면 "home" 목적지로 이동합니다.
+//                    ) {
+//                        Text("뒤로")
+//                    }
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Button(
+//                        onClick = {
+//                            selectedMenu = getRandomMenuExceptSelected(selectedMenu)
+//
+//                            runBlocking {
+//                                selectedMenuDao.insertMenu(SelectedMenu(menu = selectedMenu))
+//                            }
+//                        }
+//                    ) {
+//                        Text("다시 뽑기")
+//                    }
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Button(
+//                        onClick = {
+//                            navController.navigate("next_destination/$selectedMenu")
+//                        }
+//                    ) {
+//                        Text("다음")
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//
+//    fun getRandomMenuExceptSelected(selected: String): String {
+//        val menuList = listOf("한식", "양식", "일식", "중식")
+//        val remainingMenus =
+//            menuList.filter { it != selected }
+//        return remainingMenus.random()
+//    }
+//
+//    @Composable
+//    fun NextScreen(navController: NavController, selectedMenu: String) {
+//        val koreanDishes = listOf(
+//            "불고기 덮밥",
+//            "소고기"
+//        )
+//        val westernDishes = listOf(
+//            "스테이크 샐러드",
+//            "도넛"
+//        )
+//        val chineseDishes = listOf(
+//            "자장면",
+//            "마파두부덮밥"
+//        )
+//        val japaneseDishes = listOf(
+//            "초밥",
+//            "고로케"
+//        )
+//
+//        var recommendedDish by remember {
+//            val initDish = when (selectedMenu) {
+//                "한식" -> koreanDishes.random()
+//                "양식" -> westernDishes.random()
+//                "중식" -> chineseDishes.random()
+//                "일식" -> japaneseDishes.random()
+//                else -> ""
+//            }
+//            mutableStateOf(initDish)
+//        }
+//
+//        LaunchedEffect(Unit) {
+//            repeat(20) {
+//                delay(50)
+//                recommendedDish = when (selectedMenu) {
+//                    "한식" -> koreanDishes.random()
+//                    "양식" -> westernDishes.random()
+//                    "중식" -> chineseDishes.random()
+//                    "일식" -> japaneseDishes.random()
+//                    else -> ""
+//                }
+//            }
+//        }
+//
+//
+//        val buttonText = "추천 메뉴는 '$recommendedDish'입니다!"
+//
+//        Surface(
+//            modifier = Modifier.fillMaxSize(),
+//            color = MaterialTheme.colorScheme.background
+//        ) {
+//            Column(
+//                modifier = Modifier.fillMaxSize(),
+//                verticalArrangement = Arrangement.Center,
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Greeting(buttonText, fontWeight = FontWeight.Bold)
+//                Spacer(modifier = Modifier.height(16.dp))
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.Center
+//                ) {
+//                    Button(
+//                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+//                        onClick = { navController.navigate("details") }
+//                    ) {
+//                        Text("뒤로", color = Color.Black)
+//                    }
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Button(
+//                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+//                        onClick = {
+//                            GlobalScope.launch {
+//                                repeat(20) {
+//                                    delay(50)
+//                                    recommendedDish = when (selectedMenu) {
+//                                        "한식" -> koreanDishes.random()
+//                                        "양식" -> westernDishes.random()
+//                                        "중식" -> chineseDishes.random()
+//                                        "일식" -> japaneseDishes.random()
+//                                        else -> ""
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    ) {
+//                        Text("다시 뽑기", color = Color.Black)
+//                    }
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Button(
+//                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+//                        onClick = { navController.navigate("home") }
+//                    ) {
+//                        Text("처음으로", color = Color.Black)
+//                    }
+//                }
+//            }
+//        }
+//    }
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun NewBoardScreen() {
     var name by remember { mutableStateOf("") }
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
     Column {
         TextField(
             value = name,
@@ -416,7 +684,7 @@ fun NewBoardScreen() {
             placeholder = { Text(text = "") }
         )
         Button(onClick = {
-            val newBoardIcon = R.drawable.middle_board
+            val newBoardIcon = R.drawable.ic_android_black_24dp
             val newBoardTitle = name
             val newBoard = Pair(newBoardIcon, newBoardTitle)
         }) {
@@ -427,13 +695,13 @@ fun NewBoardScreen() {
 
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+fun HomeBoardTitle(icon: Int, boardtitle: String, onClick: () -> Unit) {
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -442,7 +710,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             .padding(horizontal = 10.dp, vertical = 5.dp)
             .fillMaxWidth()
             .background(Color.White)
-            .clickable { }
+            .clickable(onClick = onClick)
     ) {
         Image(
             painter = painterResource(id = icon),
@@ -453,7 +721,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             text = boardtitle,
             color = Color.DarkGray,
             fontSize = 15.sp,
-            fontFamily = nanumbarngothic,
+//            fontFamily = nanumbarngothic,
             fontWeight = FontWeight.Normal
         )
     }
@@ -551,10 +819,8 @@ fun DmScreen(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScheduleScreen(navController: NavController,
-                   onPreviousMonthClick: () -> Unit,
-                   onNextMonthClick: () -> Unit
-
+fun ScheduleScreen(
+    navController: NavController
 ) {
     Scaffold(
         topBar = {
@@ -580,11 +846,9 @@ fun ScheduleScreen(navController: NavController,
                 },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
-                    onPreviousMonthClick()
                 },
                 onNextMonthClick = {
                     selectedDate = selectedDate.plusMonths(1)
-                    onNextMonthClick()
                 }
             )
         }
@@ -753,9 +1017,9 @@ fun CalendarDay(
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = if (isPublicHoliday) Color.Red
-                    else if (isFirstInRow) Color.Red
-                    else if (isLastInRow) Color.Blue
-                    else Color.Black,
+            else if (isFirstInRow) Color.Red
+            else if (isLastInRow) Color.Blue
+            else Color.Black,
             modifier = Modifier
                 .background(if (isSelected) Color.White else Color.Transparent)
                 .padding(vertical = 2.dp, horizontal = 4.dp)
@@ -911,9 +1175,15 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
-                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        val currentDate =
+                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                         val newChatMessage =
-                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+                            ChatMessage(
+                                message = chatmessage,
+                                userId = user?.uid,
+                                userName = user?.displayName,
+                                uploadDate = currentDate
+                            )
                         saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
@@ -932,7 +1202,8 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
         ) {
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val alignment =
+                    if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
                 val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
                 Box(
                     modifier = Modifier
@@ -969,17 +1240,32 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit, _imageBitmap: MutableState<ImageBitmap?>) {
+fun PersonalInfoScreen(
+    navController: NavController,
+    onClicked: () -> Unit,
+    _imageBitmap: MutableState<ImageBitmap?>,
+    onPickImage: () -> Unit
+) {
     val imageSizeDp = 100.dp
     val currentUser = FirebaseAuth.getInstance().currentUser
-    val onImageIconClick = { /* 이미지 클릭 시 수행할 액션 정의 */ }
-    Scaffold(
-        topBar = {
-            MyTopBar("개인정보")
-        },
-        bottomBar = {
-            MyBottomBara(navController)
+    val onImageIconClick = { onPickImage() }
+
+
+    // 상태 관련 변수들 추가
+    var selectedStatus by remember { mutableStateOf("미팅 중") }
+
+    LaunchedEffect(Unit) {
+        if (currentUser != null) {
+            getUserStatusFromFirestore(currentUser.uid) { fetchedStatus ->
+                selectedStatus = fetchedStatus
+            }
         }
+    }
+    val statusOptions = listOf("미팅 중", "출퇴근 중", "병가", "휴가", "업무 중")
+    var showDropdown by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = { MyTopBar("개인정보") }, // MyTopBar는 @Composable 함수여야 합니다.
+        bottomBar = { MyBottomBara(navController) } // MyBottomBara도 @Composable 함수여야 합니다.
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -1025,6 +1311,47 @@ fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit, _ima
                 enabled = false
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 2. 상태 설정을 위한 OutlinedTextField와 DropdownMenu 추가
+
+
+            OutlinedTextField(
+                value = selectedStatus,
+                onValueChange = { /* 여기서는 값 변경을 허용하지 않음 */ },
+                label = { Text("상태") },
+                trailingIcon = {
+                    IconButton(onClick = { showDropdown = true }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+                },
+                enabled = false,
+                modifier = Modifier.focusable(enabled = false)
+            )
+
+            DropdownMenu(
+                expanded = showDropdown,
+                onDismissRequest = { showDropdown = false }
+            ) {
+                for (option in statusOptions) {
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            selectedStatus = option
+                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                            if (userId != null) {
+                                saveUserStatusToFirestore(userId, selectedStatus)
+                            }
+                            showDropdown = false
+                        }
+                    )
+                }
+            }
+
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Box(
@@ -1040,7 +1367,7 @@ fun PersonalInfoScreen(navController: NavController, onClicked: () -> Unit, _ima
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Column {
-                    Text(text = "로그아웃", modifier = Modifier.clickable{ onClicked() })
+                    Text(text = "로그아웃", modifier = Modifier.clickable { onClicked() })
                 }
             }
         }
