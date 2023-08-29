@@ -258,7 +258,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = startDestination) {
+                NavHost(navController = navController, startDestination = "home") {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -446,10 +446,12 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
             .background(Color.White)
             .clickable { onClicked() }
             .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
-            .wrapContentSize(),
-        contentAlignment = Alignment.Center
+            .size(width= 178.dp, height = 128.dp),
     ) {
-        Column {
+        Column(verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier
+                .padding(start= 14.dp, top= 8.dp)) {
             Image(
                 painter = painterResource(id = icon),
                 contentDescription = null,
@@ -460,11 +462,9 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
             Text(
                 text = boardtitle,
                 color = Color.DarkGray,
-                fontSize = 15.sp,
+                fontSize = 20.sp,
                 fontFamily = nanumbarngothic,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier
-                    .padding(start = 40.dp) // Adjust this padding as needed
+                fontWeight = FontWeight.Normal
             )
         }
     }
@@ -1488,7 +1488,7 @@ private fun MyTopBar(topBarTitle: String) {
     TopAppBar(
         title = { Text(text = topBarTitle) },
         //탑바 색바꾸기
-        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff77D8D8))
+        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
     )
 }
 
@@ -1511,7 +1511,7 @@ private fun MyBottomBar(navController: NavController) {
                 shape = RoundedCornerShape(0.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xff75D1FF),
-                ),
+                ), modifier = Modifier.padding(8.dp)
             ) {
                 // Text(text = "home")
                 Image(
@@ -1519,7 +1519,6 @@ private fun MyBottomBar(navController: NavController) {
                     contentDescription = null,
                     modifier = Modifier
                         .size(30.dp)
-                        .padding(2.dp)
                 )
             }
             Button(
@@ -1529,14 +1528,13 @@ private fun MyBottomBar(navController: NavController) {
                 shape = RoundedCornerShape(0.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xff75D1FF),
-                ),
+                ), modifier = Modifier.padding(8.dp)
             ) {
                 // Text(text = "DM")
                 Image(
                     painter = painterResource(id = R.drawable.baseline_chat_24),
                     contentDescription = null, modifier = Modifier.size(30.dp)
                 )
-
             }
             Button(
                 onClick = {
@@ -1545,14 +1543,13 @@ private fun MyBottomBar(navController: NavController) {
                 shape = RoundedCornerShape(0.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xff75D1FF),
-                ),
+                ), modifier = Modifier.padding(8.dp)
             ) {
                 // Text(text = "스케쥴")
                 Image(
                     painter = painterResource(id = R.drawable.baseline_calendar_month_24),
                     contentDescription = null, modifier = Modifier.size(30.dp)
                 )
-
             }
             Button(
                 onClick = {
@@ -1561,14 +1558,13 @@ private fun MyBottomBar(navController: NavController) {
                 shape = RoundedCornerShape(0.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xff75D1FF),
-                ),
+                ), modifier = Modifier.padding(8.dp)
             ) {
                 //Text(text = "개인정보")
                 Image(
                     painter = painterResource(id = R.drawable.baseline_person_24),
                     contentDescription = null, modifier = Modifier.size(30.dp)
                 )
-
             }
         }
     }
