@@ -11,11 +11,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +43,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -52,6 +55,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
@@ -71,6 +75,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +86,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -103,7 +112,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -113,7 +121,15 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -277,8 +293,6 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
-                    //추가해야할 스크린
-                    //글작성
                     composable("homeScreenRoute") { HomeScreen(navController) }
                     composable("lunchMenuScreenRoute") { LunchMenuScreen(navController) }
                     composable("details") { DetailsScreen(navController) }
@@ -352,23 +366,6 @@ fun GoogleSignInButton(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    Scaffold(topBar = {
-        MyTopBar("home")
-    }, bottomBar = {
-        MyBottomBara(navController)
-    }) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            Column {
-                Text(text = "게시판", modifier = Modifier.clickable { navController.navigate("boardview") })
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
 //    val nanumbarngothic = FontFamily(
 //        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
 //        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
@@ -399,7 +396,7 @@ fun HomeScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            MyBottomBara(navController)
+            MyBottomBar(navController)
         }
     ) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
@@ -417,7 +414,7 @@ fun HomeScreen(navController: NavController) {
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
                         boardtitle = "공지게시판",
-                        onClick = {}
+                        onClick = { navController.navigate("boardview") }
                     )
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
@@ -449,16 +446,18 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
-            @Composable
-            fun LoginScreen(signInClicked: () -> Unit) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    GoogleSignInButton(signInClicked)
-                }
-            }
+
+@Composable
+fun LoginScreen(signInClicked: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        GoogleSignInButton(signInClicked)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimerScreen(navController: NavController) {
@@ -522,12 +521,12 @@ fun TimerScreen(navController: NavController) {
                         },
                         enabled = !isRunning
                     ) {
-                        Text(text =  "회의시작")
+                        Text(text = "회의시작")
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Button(
                         onClick = {
-                                stopTimer()
+                            stopTimer()
                             isPaused = true
                             val elapsedTimeMillis = (initialRemainingSeconds - remainingSeconds) * 1000L
                             elapsedTimeMinutes = (elapsedTimeMillis / 1000 / 60).toInt()
@@ -997,14 +996,13 @@ fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
 }
 
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DmScreen(navController: NavController) {
     Scaffold(topBar = {
         MyTopBar("Dm")
     }, bottomBar = {
-        MyBottomBara(navController)
+        MyBottomBar(navController)
     }) { innerPadding ->
         Column(
             modifier = Modifier
@@ -1054,7 +1052,7 @@ fun ScheduleScreen(
             MyTopBar("스케줄")
         },
         bottomBar = {
-            MyBottomBara(navController)
+            MyBottomBar(navController)
         }
     ) { innerPadding ->
 
@@ -1355,6 +1353,196 @@ fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
         }
     })
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PersonalInfoScreen(
+    navController: NavController,
+    onClicked: () -> Unit,
+    _imageBitmap: MutableState<ImageBitmap?>,
+    onPickImage: () -> Unit
+) {
+    val imageSizeDp = 100.dp
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val onImageIconClick = { onPickImage() }
+
+
+    // 상태 관련 변수들 추가
+    var selectedStatus by remember { mutableStateOf("미팅 중") }
+
+    LaunchedEffect(Unit) {
+        if (currentUser != null) {
+            getUserStatusFromFirestore(currentUser.uid) { fetchedStatus ->
+                selectedStatus = fetchedStatus
+            }
+        }
+    }
+    val statusOptions = listOf("미팅 중", "출퇴근 중", "병가", "휴가", "업무 중")
+    var showDropdown by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = { MyTopBar("개인정보") }, // MyTopBar는 @Composable 함수여야 합니다.
+        bottomBar = { MyBottomBar(navController) } // MyBottomBara도 @Composable 함수여야 합니다.
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (_imageBitmap.value != null) {
+                Image(
+                    bitmap = _imageBitmap.value!!,
+                    contentDescription = "User profile picture",
+                    modifier = Modifier
+                        .size(imageSizeDp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onImageIconClick() }
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Default user icon",
+                    modifier = Modifier
+                        .size(imageSizeDp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onImageIconClick() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = currentUser?.displayName ?: "",
+                onValueChange = {},
+                label = { Text("Name") },
+                enabled = false
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = currentUser?.email ?: "",
+                onValueChange = {},
+                label = { Text("E-mail") },
+                enabled = false
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 2. 상태 설정을 위한 OutlinedTextField와 DropdownMenu 추가
+
+
+            OutlinedTextField(
+                value = selectedStatus,
+                onValueChange = { /* 여기서는 값 변경을 허용하지 않음 */ },
+                label = { Text("상태") },
+                trailingIcon = {
+                    IconButton(onClick = { showDropdown = true }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+                },
+                enabled = false,
+                modifier = Modifier.focusable(enabled = false)
+            )
+
+            DropdownMenu(
+                expanded = showDropdown,
+                onDismissRequest = { showDropdown = false }
+            ) {
+                for (option in statusOptions) {
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            selectedStatus = option
+                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                            if (userId != null) {
+                                saveUserStatusToFirestore(userId, selectedStatus)
+                            }
+                            showDropdown = false
+                        }
+                    )
+                }
+            }
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) { }
+
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column {
+                    Text(text = "로그아웃", modifier = Modifier.clickable { onClicked() })
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun MyTopBar(topBarTitle: String) {
+    TopAppBar(
+        title = { Text(text = topBarTitle) },
+        //탑바 색바꾸기
+        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+    )
+}
+
+@Composable
+private fun MyBottomBar(navController: NavController) {
+    BottomAppBar(
+        containerColor = Color.Gray
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(onClick = {
+                navController.navigate("home")
+            }) {
+                Text(text = "home")
+            }
+            Button(onClick = {
+                navController.navigate("dm")
+            }) {
+                Text(text = "DM")
+            }
+            Button(onClick = {
+                navController.navigate("schedule")
+            }) {
+                Text(text = "스케쥴")
+            }
+            Button(onClick = {
+                navController.navigate("personal")
+            }) {
+                Text(text = "개인정보")
+            }
+        }
+    }
+}
+
+data class ChatMessage(
+    val message: String? = "메시지 오류",
+    val userId: String? = "UID 오류",
+    val userName: String? = "이름 오류",
+    val uploadDate: String? = "",
+    val profileString: String? = "",
+    val imageUrl: String? = ""
+)
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2207,24 +2395,29 @@ fun uploadToPlayChatImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (Strin
 }
 
 data class Post(
-    val title: String,
-    val author: String,
-    val date: String,
-    val content: String
+    val key: String? = null,
+    val title: String = "",
+    val author: String = "",
+    val date: String = "",
+    val content: String = "",
+    val profile: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController) {
-    val initialPosts = emptyList<Post>()
+fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
 
-    var postList by remember { mutableStateOf(initialPosts) }
+    var postList by remember { mutableStateOf(listOf<Post>()) }
     var titleState by remember { mutableStateOf(TextFieldValue()) }
     var contentState by remember { mutableStateOf(TextFieldValue()) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showBottomBar by remember { mutableStateOf(false) }
-    var clickInput by remember { mutableStateOf(false) }
+    val user: FirebaseUser? = mAuth.currentUser
 
+
+    loadPosts { posts ->
+        postList = posts
+    }
 
     // Dialog state
     var showDialog by remember { mutableStateOf(false) }
@@ -2242,10 +2435,18 @@ fun BoardViewScreen(navController: NavController) {
         // 예를 들어, Firebase Storage를 사용하여 이미지를 업로드할 수 있습니다.
     }
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            selectedImageUri = uri
+            // 이미지가 선택되면 선택한 이미지의 Uri가 selectedImageUri에 설정됩니다.
+        }
+    )
+
     // 게시글 업데이트 처리
-    val onPostSubmitted: (Post) -> Unit = { newPost ->
-        postList = postList + newPost
-    }
+//    val onPostSubmitted: (Post) -> Unit = { newPost ->
+//        postList = postList + newPost
+//    }
     fun canPost(): Boolean {
         return titleState.text.isNotBlank() && contentState.text.isNotBlank()
     }
@@ -2259,12 +2460,13 @@ fun BoardViewScreen(navController: NavController) {
                 contentPadding = paddingValues
             ) {
                 items(postList) { post ->
-                    PostCard(post, onEditClick = {
-                        editedPost = post
-                        showDialog = true
-                    }, onDeleteClick = {
-                        postList = postList - post
-                    })
+                    PostCard(
+                        post,
+                        onEditClick = {
+                            editedPost = post
+                            showDialog = true
+                        },
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -2288,14 +2490,16 @@ fun BoardViewScreen(navController: NavController) {
                         // 제목 입력 필드
                         IconButton(
                             onClick = {
-                                clickInput = !clickInput
+                                launcher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
                                 // 이미지 업로드 다이얼로그를 열거나 이미지 선택 로직을 호출합니다.
                                 // 이미지 선택이 완료되면 selectedImageUri에 선택한 이미지의 Uri가 설정됩니다.
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.upload), // 원하는 아이콘을 선택하세요.
+                                imageVector = Icons.Default.AccountBox, // 원하는 아이콘을 선택하세요.
                                 contentDescription = "이미지 업로드"
                             )
                         }
@@ -2315,13 +2519,14 @@ fun BoardViewScreen(navController: NavController) {
                         // 게시 버튼
                         Button(
                             onClick = {
-                                val post = Post(
+                                val newPost = Post(
                                     title = titleState.text,
-                                    author = "사용자",
+                                    author = user?.displayName ?: "",
                                     date = getCurrentDate(),
-                                    content = contentState.text
+                                    content = contentState.text,
+                                    profile = user?.photoUrl.toString()
                                 )
-                                onPostSubmitted(post)
+                                savePost(newPost)
                                 // 게시 버튼 클릭 후 입력 필드 초기화
                                 titleState = TextFieldValue("")
                                 contentState = TextFieldValue("")
@@ -2343,12 +2548,11 @@ fun BoardViewScreen(navController: NavController) {
                     IconButton(
                         onClick = {
                             showBottomBar = true
-//                            navController.navigate("")
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.edit), // 원하는 아이콘을 선택하세요.
+                            imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
                             contentDescription = "게시글 추가"
                         )
                     }
@@ -2363,8 +2567,9 @@ fun BoardViewScreen(navController: NavController) {
             EditPostDialog(
                 post = post,
                 onEditCompleted = { updatedPost ->
-                    val updatedList = postList.map { if (it == post) updatedPost else it }
-                    postList = updatedList
+                    val database = Firebase.database
+                    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                    postRef.child("${post.key}").setValue(updatedPost)
                     editedPost = null
                     showDialog = false
                 },
@@ -2459,13 +2664,11 @@ fun EditPostDialog(
 fun PostCard(
     post: Post,
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
 ) {
     var showOptions by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-//        elevation = 4.dp
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -2479,7 +2682,7 @@ fun PostCard(
                     onClick = { showOptions = !showOptions },
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.option), // 원하는 아이콘을 선택하세요.
+                        imageVector = Icons.Default.Settings, // 원하는 아이콘을 선택하세요.
                         contentDescription = "Options"
                     )
                 }
@@ -2501,7 +2704,9 @@ fun PostCard(
                     }
                     TextButton(
                         onClick = {
-                            onDeleteClick()
+                            val database = Firebase.database
+                            val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                            postRef.child("${post.key}").setValue(null)
                         }
                     ) {
                         Text("삭제")
@@ -2513,13 +2718,17 @@ fun PostCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 프로필 사진 (여기에 실제 프로필 사진을 표시하려면 Image 또는 Coil 라이브러리를 사용할 수 있습니다.)
-                Box(
+
+                val selectedUri = post.profile.let { Uri.parse(it) }
+
+                AsyncImage(
+                    model = selectedUri,
+                    contentDescription = null,
                     modifier = Modifier
                         .size(32.dp)
-                        .background(Color.Gray) // 임시로 회색 배경 사용
-                ) {
-                    // 실제 프로필 사진을 표시하는 코드를 여기에 추가
-                }
+                        .clip(CircleShape)
+                )
+                // 실제 프로필 사진을 표시하는 코드를 여기에 추가
 
                 Spacer(modifier = Modifier.width(8.dp))
 
@@ -2555,6 +2764,38 @@ fun PostCard(
     }
 }
 
+
+fun savePost(post: Post) {
+    val database = Firebase.database
+    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+    val newPostRef = postRef.push() // 새로운 메시지를 추가하기 위한 참조
+
+    newPostRef.setValue(post)
+}
+
+
+fun loadPosts(onDataChange: (List<Post>) -> Unit) {
+    val database = Firebase.database
+    val postRef = database.getReference("Posts")
+
+    postRef.addValueEventListener(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val posts = mutableListOf<Post>()
+            for (childSnapshot in snapshot.children) {
+                val key = childSnapshot.key
+                val post = childSnapshot.getValue(Post::class.java)
+                post?.let {
+                    posts.add(it.copy(key = key))
+                }
+            }
+            onDataChange(posts)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // 에러 처리
+        }
+    })
+}
 
 
 
