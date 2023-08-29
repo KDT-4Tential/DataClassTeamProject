@@ -19,9 +19,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +28,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,13 +38,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
@@ -85,11 +78,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -103,27 +91,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -161,11 +134,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Date
-import java.util.Locale
-import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -438,7 +406,7 @@ fun HomeScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            MyBottomBara(navController)
+            MyBottomBar(navController)
         }
     ) { innerPadding ->
         Surface(
@@ -458,6 +426,83 @@ fun HomeScreen(navController: NavController) {
             }
         }
     }
+}
+
+@Composable
+fun HomeBoardTitle(icon: Int, boardtitle: String) {
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(Color.White)
+            .clickable { }
+            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
+            .wrapContentSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column {
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = boardtitle,
+                color = Color.DarkGray,
+                fontSize = 15.sp,
+                fontFamily = nanumbarngothic,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier
+                    .padding(start = 40.dp) // Adjust this padding as needed
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun NewBoardScreen() {
+    var name by remember { mutableStateOf("") }
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
+    Column {
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(text = "새로운 게시판 이름") },
+            placeholder = { Text(text = "") }
+        )
+        Button(onClick = {
+            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
+            val newBoardTitle = name
+            val newBoard = Pair(newBoardIcon, newBoardTitle)
+        }) {
+            Text(text = "생성")
+        }
+    }
+}
+
+@Composable
+fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
+    Text(
+        text = categorytitle,
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        modifier = Modifier.padding(10.dp),
+        color = Color.DarkGray
+    )
 }
 
 @Composable
@@ -541,7 +586,8 @@ fun TimerScreen(navController: NavController) {
                         onClick = {
                             stopTimer()
                             isPaused = true
-                            val elapsedTimeMillis = (initialRemainingSeconds - remainingSeconds) * 1000L
+                            val elapsedTimeMillis =
+                                (initialRemainingSeconds - remainingSeconds) * 1000L
                             elapsedTimeMinutes = (elapsedTimeMillis / 1000 / 60).toInt()
                             elapsedTimeSeconds = ((elapsedTimeMillis / 1000) % 60).toInt()
                         },
@@ -934,117 +980,6 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
 
         }
     }
-}
-
-@Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
-    Box(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .background(Color.White)
-            .clickable { }
-            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
-            .wrapContentSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column {
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(32.dp)
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = boardtitle,
-                color = Color.DarkGray,
-                fontSize = 15.sp,
-                fontFamily = nanumbarngothic,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier
-                    .padding(start = 40.dp) // Adjust this padding as needed
-            )
-        }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-fun NewBoardScreen() {
-    var name by remember { mutableStateOf("") }
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
-    Column {
-        TextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(text = "새로운 게시판 이름") },
-            placeholder = { Text(text = "") }
-        )
-        Button(onClick = {
-            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
-            val newBoardTitle = name
-            val newBoard = Pair(newBoardIcon, newBoardTitle)
-        }) {
-            Text(text = "생성")
-        }
-    }
-}
-
-
-//@Composable
-//fun HomeBoardTitle(icon: Int, boardtitle: String) {
-//    val nanumbarngothic = FontFamily(
-//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-//    )
-//
-//    Row(
-//        verticalAlignment = Alignment.CenterVertically,
-//        horizontalArrangement = Arrangement.spacedBy(10.dp),
-//        modifier = Modifier
-//            .padding(horizontal = 10.dp, vertical = 5.dp)
-//            .fillMaxWidth()
-//            .background(Color.White)
-//            .clickable { }
-//    ) {
-//        Image(
-//            painter = painterResource(id = icon),
-//            contentDescription = null,
-//            modifier = Modifier.size(35.dp) // icon size
-//        )
-//        Text(
-//            text = boardtitle,
-//            color = Color.DarkGray,
-//            fontSize = 15.sp,
-//            fontFamily = nanumbarngothic,
-//            fontWeight = FontWeight.Normal
-//        )
-//    }
-//}
-
-@Composable
-fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
-    Text(
-        text = categorytitle,
-        fontFamily = fontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
-        modifier = Modifier.padding(10.dp),
-        color = Color.DarkGray
-    )
 }
 
 
@@ -1546,13 +1481,12 @@ fun PersonalInfoScreen(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun MyTopBar(topBarTitle: String) {
-    private fun MyTopBar(topBarTitle: String) {
-        TopAppBar(
-            title = { Text(text = topBarTitle) },
-            //탑바 색바꾸기
-            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff77D8D8))
-        )
-    }
+    TopAppBar(
+        title = { Text(text = topBarTitle) },
+        //탑바 색바꾸기
+        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff77D8D8))
+    )
+}
 
 @Composable
 private fun MyBottomBar(navController: NavController) {
@@ -1636,14 +1570,15 @@ private fun MyBottomBar(navController: NavController) {
     }
 }
 
-    data class ChatMessage(
-        val message: String? = "메시지 오류",
-        val userId: String? = "UID 오류",
-        val userName: String? = "이름 오류",
-        val uploadDate: String? = "",
-        val profileString: String? = "",
-        val imageUrl: String? = ""
-    )
+data class ChatMessage(
+    val message: String? = "메시지 오류",
+    val userId: String? = "UID 오류",
+    val userName: String? = "이름 오류",
+    val uploadDate: String? = "",
+    val profileString: String? = "",
+    val imageUrl: String? = ""
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
@@ -1735,7 +1670,10 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                                val currentDate = SimpleDateFormat(
+                                    "HH:mm",
+                                    Locale.getDefault()
+                                ).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -1760,7 +1698,8 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor =
+                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -1818,7 +1757,10 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                            .background(
+                                                backgroundColor,
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -1827,9 +1769,14 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
+                                                    val annotatedString =
+                                                        AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        "클립보드에 복사되었습니다",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 })
                                             }
                                         )
@@ -1869,8 +1816,10 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
 
 
 fun saveTeamChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("teamproject") // "chat"이라는 경로로 데이터를 저장
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef =
+        database.getReference("chattings").child("teamproject") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
     newMessageRef.setValue(chatMessage)
@@ -1878,7 +1827,8 @@ fun saveTeamChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadTeamChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("teamproject")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2018,7 +1968,10 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                                val currentDate = SimpleDateFormat(
+                                    "HH:mm",
+                                    Locale.getDefault()
+                                ).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -2043,7 +1996,8 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor =
+                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -2101,7 +2055,10 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                            .background(
+                                                backgroundColor,
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -2110,9 +2067,14 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
+                                                    val annotatedString =
+                                                        AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        "클립보드에 복사되었습니다",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 })
                                             }
                                         )
@@ -2152,7 +2114,8 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
 
 
 fun saveWorkChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("workspace") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -2161,7 +2124,8 @@ fun saveWorkChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadWorkChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("workspace")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2302,7 +2266,10 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                                val currentDate = SimpleDateFormat(
+                                    "HH:mm",
+                                    Locale.getDefault()
+                                ).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -2327,7 +2294,8 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor =
+                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -2385,7 +2353,10 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                            .background(
+                                                backgroundColor,
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -2394,9 +2365,14 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
+                                                    val annotatedString =
+                                                        AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        "클립보드에 복사되었습니다",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 })
                                             }
                                         )
@@ -2436,8 +2412,10 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
 
 
 fun savePlayChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("playground") // "chat"이라는 경로로 데이터를 저장
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef =
+        database.getReference("chattings").child("playground") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
     newMessageRef.setValue(chatMessage)
@@ -2445,7 +2423,8 @@ fun savePlayChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadPlayChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("playground")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2805,7 +2784,8 @@ fun PostCard(
                     TextButton(
                         onClick = {
                             val database = Firebase.database
-                            val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                            val postRef =
+                                database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
                             postRef.child("${post.key}").setValue(null)
                         }
                     ) {
@@ -2873,7 +2853,6 @@ fun savePost(post: Post) {
     newPostRef.setValue(post)
 }
 
-
 fun loadPosts(onDataChange: (List<Post>) -> Unit) {
     val database = Firebase.database
     val postRef = database.getReference("Posts")
@@ -2896,7 +2875,6 @@ fun loadPosts(onDataChange: (List<Post>) -> Unit) {
         }
     })
 }
-
 
 
 //@Preview(showBackground = true)
