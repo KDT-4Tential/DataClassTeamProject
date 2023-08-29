@@ -23,7 +23,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,9 +68,9 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -82,7 +81,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -106,17 +104,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -141,11 +139,9 @@ import java.util.Date
 import java.util.Locale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Timer
+import kotlin.concurrent.scheduleAtFixedRate
 
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase.getInstance
-import com.google.firebase.database.ValueEventListener
 
 class MainActivity : ComponentActivity() {
 
@@ -168,7 +164,6 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        FirebaseApp.initializeApp(this)
         setContent {
             DataClassTeamProjectTheme {
 
@@ -207,17 +202,19 @@ class MainActivity : ComponentActivity() {
                     }
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = startDestination) {
+                NavHost(navController = navController, startDestination = "home") {
                     composable("home") {
                         HomeScreen(navController)
+                    }
+                    composable("timer") {
+                        TimerScreen(navController)
                     }
                     composable("dm") {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen(navController = rememberNavController(),
-                            onPreviousMonthClick = {},
-                            onNextMonthClick = {}
+                        ScheduleScreen(
+                            navController = navController,
                         )
                     }
                     composable("personal") {
@@ -312,7 +309,8 @@ data class ChatMessage(
 )
 
 fun saveChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -346,12 +344,12 @@ fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
     val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
 
     Scaffold(
@@ -367,7 +365,7 @@ fun HomeScreen(navController: NavController) {
                 actions = {
                     IconButton(onClick = { navController.navigate("newboard") }) {
                         Image(
-                            painter = painterResource(id = R.drawable.top_addboard),
+                            painter = painterResource(id = R.drawable.baseline_add_alert_24),
                             contentDescription = null,
                             modifier = Modifier.size(35.dp)
                         )
@@ -386,10 +384,10 @@ fun HomeScreen(navController: NavController) {
                     .fillMaxSize()
             ) {
                 Column {
-                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                    HomeBoardTitle(icon = R.drawable.middle_announcementboard, boardtitle = "공지게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_lunch, boardtitle = "점심메뉴게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_board, boardtitle = "내 게시판")
+//                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "공지게시판")
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "점심메뉴게시판")
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "내 게시판")
                     Spacer(modifier = Modifier.height(150.dp))
                 }
                 Divider(
@@ -398,14 +396,138 @@ fun HomeScreen(navController: NavController) {
                         .fillMaxWidth()
                         .width(0.5.dp)
                 )
-                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
+//                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
                 HomeBoardTitle(
-                    icon = R.drawable.middle_timer,
-                    boardtitle = "회의 시간 타이머"
+                    icon = R.drawable.baseline_add_alert_24,
+                    boardtitle = "회의 시간 타이머",
+                    onClick = {
+                        navController.navigate("timer") // "timer"는 TimerScreen의 route입니다.
+                    }
                 )
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimerScreen(navController: NavController) {
+    var remainingSeconds by remember { mutableStateOf(30 * 60) }
+    var initialRemainingSeconds by remember { mutableStateOf(30 * 60) }
+    var isRunning by remember { mutableStateOf(false) }
+    var isPaused by remember { mutableStateOf(false) }
+    var elapsedTimeMinutes by remember { mutableStateOf(0) }
+    var elapsedTimeSeconds by remember { mutableStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "타이머", color = Color.DarkGray) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                    }
+                }
+            )
+        },
+        content = { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatTime(remainingSeconds),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (isPaused) {
+                        if (elapsedTimeMinutes > 0) {
+                            "회의한 시간: $elapsedTimeMinutes 분 $elapsedTimeSeconds 초"
+                        } else {
+                            "회의한 시간: $elapsedTimeSeconds 초"
+                        }
+                    } else {
+                        ""
+                    },
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            if (!isRunning) {
+                                isRunning = true
+                                startTimer(onTick = { updatedValue ->
+                                    remainingSeconds = updatedValue
+                                })
+                            }
+                        },
+                        enabled = !isRunning
+                    ) {
+                        Text(text =  "회의시작")
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(
+                        onClick = {
+                                stopTimer()
+                            isPaused = true
+                            val elapsedTimeMillis = (initialRemainingSeconds - remainingSeconds) * 1000L
+                            elapsedTimeMinutes = (elapsedTimeMillis / 1000 / 60).toInt()
+                            elapsedTimeSeconds = ((elapsedTimeMillis / 1000) % 60).toInt()
+                        },
+                        enabled = isRunning
+                    ) {
+                        Text(text = "회의 끝")
+                    }
+                }
+            }
+        }
+    )
+}
+
+// 가상의 타이머 로직을 구현하는 함수라고 가정합니다.
+fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%02d:%02d", minutes, remainingSeconds)
+}
+
+private var timer: Timer? = null
+private var currentSeconds: Int = 0
+
+fun startTimer(onTick: (Int) -> Unit) {
+    // 타이머 로직을 구현하고 매 초마다 onTick 함수를 호출하여 UI를 업데이트합니다.
+    currentSeconds = 30 * 60
+
+    timer = Timer()
+    timer?.scheduleAtFixedRate(1000L, 1000L) {
+        if (currentSeconds > 0) {
+            currentSeconds--
+            onTick(currentSeconds)
+        } else {
+            // 타이머 종료
+            stopTimer()
+        }
+    }
+}
+
+fun resumeTimer() {
+    startTimer { updatedValue ->
+        currentSeconds = updatedValue
+    }
+}
+
+fun stopTimer() {
+    timer?.cancel()
+    timer = null
 }
 
 @Composable
@@ -426,7 +548,7 @@ fun NewBoardScreen() {
             placeholder = { Text(text = "") }
         )
         Button(onClick = {
-            val newBoardIcon = R.drawable.middle_board
+            val newBoardIcon = R.drawable.baseline_add_alert_24
             val newBoardTitle = name
             val newBoard = Pair(newBoardIcon, newBoardTitle)
         }) {
@@ -437,13 +559,13 @@ fun NewBoardScreen() {
 
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+fun HomeBoardTitle(icon: Int, boardtitle: String, onClick: () -> Unit) {
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +574,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             .padding(horizontal = 10.dp, vertical = 5.dp)
             .fillMaxWidth()
             .background(Color.White)
-            .clickable { }
+            .clickable { onClick() }
     ) {
         Image(
             painter = painterResource(id = icon),
@@ -463,7 +585,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             text = boardtitle,
             color = Color.DarkGray,
             fontSize = 15.sp,
-            fontFamily = nanumbarngothic,
+//            fontFamily = nanumbarngothic,
             fontWeight = FontWeight.Normal
         )
     }
@@ -499,10 +621,11 @@ fun TestScreen() {
     }
     selectUri?.let { uri ->
         uploadFileToFirebaseStorage(
-        fileUri = uri,
-        onComplete = {
+            fileUri = uri,
+            onComplete = {
 
-        }) }
+            })
+    }
 }
 
 fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
@@ -527,31 +650,6 @@ fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(navController: NavController) {
-    Scaffold(topBar = {
-        MyTopBar("home")
-    }, bottomBar = {
-        MyBottomBara(navController)
-    }) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            Column {
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -585,9 +683,7 @@ fun DmScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
-    navController: NavController,
-    onPreviousMonthClick: () -> Unit,
-    onNextMonthClick: () -> Unit
+    navController: NavController
 ) {
     Scaffold(
         topBar = {
@@ -613,11 +709,9 @@ fun ScheduleScreen(
                 },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
-                    onPreviousMonthClick()
                 },
                 onNextMonthClick = {
                     selectedDate = selectedDate.plusMonths(1)
-                    onNextMonthClick()
                 }
             )
         }
@@ -786,9 +880,9 @@ fun CalendarDay(
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = if (isPublicHoliday) Color.Red
-                    else if (isFirstInRow) Color.Red
-                    else if (isLastInRow) Color.Blue
-                    else Color.Black,
+            else if (isFirstInRow) Color.Red
+            else if (isLastInRow) Color.Blue
+            else Color.Black,
             modifier = Modifier
                 .background(if (isSelected) Color.White else Color.Transparent)
                 .padding(vertical = 2.dp, horizontal = 4.dp)
@@ -944,9 +1038,15 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
-                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        val currentDate =
+                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                         val newChatMessage =
-                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+                            ChatMessage(
+                                message = chatmessage,
+                                userId = user?.uid,
+                                userName = user?.displayName,
+                                uploadDate = currentDate
+                            )
                         saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
@@ -965,7 +1065,8 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
         ) {
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val alignment =
+                    if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
                 val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
                 Box(
                     modifier = Modifier
@@ -1132,6 +1233,7 @@ fun BoardViewScreen(navController: NavController) {
     val onPostSubmitted: (Post) -> Unit = { newPost ->
         postList = postList + newPost
     }
+
     fun canPost(): Boolean {
         return titleState.text.isNotBlank() && contentState.text.isNotBlank()
     }
@@ -1442,8 +1544,6 @@ fun PostCard(
 }
 
 
-
-
 //@Preview(showBackground = true)
 //@Composable
 //fun DefaultPreview() {
@@ -1452,5 +1552,13 @@ fun PostCard(
 //            onPreviousMonthClick = {},
 //            onNextMonthClick = {}
 //        )
+//    }
+//}
+
+//@Preview(showBackground = true)
+//@Composable
+//fun TimerScreenPreview() {
+//    DataClassTeamProjectTheme {
+//        TimerScreen(navController = rememberNavController())
 //    }
 //}
