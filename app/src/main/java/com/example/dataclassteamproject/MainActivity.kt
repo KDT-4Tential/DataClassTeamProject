@@ -76,6 +76,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -120,7 +121,7 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        FirebaseApp.initializeApp(this)
+//        FirebaseApp.initializeApp(this)
         setContent {
 
             DataClassTeamProjectTheme {
@@ -178,7 +179,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("boardview") {
                         //여기에 보드뷰 스크린을 넣어주세요
-                        BoardViewScreen(navController)
+                        BoardViewScreen(navController,mAuth)
                     }
                     composable("chatting") {
                         ChattingScreen(mAuth)
@@ -257,13 +258,7 @@ fun GoogleSignInButton(
     }
 }
 
-data class ChatMessage(
-    val message: String? = "메시지 오류",
-    val userId: String? = "UID 오류",
-    val userName: String? = "이름 오류",
-    val uploadDate: String? = "",
-    var downloadUrl: String? = ""
-)
+
 
 fun saveChatMessage(chatMessage: ChatMessage) {
     val database =
@@ -914,9 +909,17 @@ data class Post(
     val content: String
 )
 
+data class ChatMessage(
+    val message: String? = "메시지 오류",
+    val userId: String? = "UID 오류",
+    val userName: String? = "이름 오류",
+    val uploadDate: String? = "",
+    var profileString: String? = ""
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController) {
+fun BoardViewScreen(navController: NavController,mAuth: FirebaseAuth) {
     val initialPosts = emptyList<Post>()
 
     var postList by remember { mutableStateOf(initialPosts) }
@@ -960,12 +963,13 @@ fun BoardViewScreen(navController: NavController) {
                 contentPadding = paddingValues
             ) {
                 items(postList) { post ->
-                    PostCard(post, onEditClick = {
+                    PostCard(post,
+                        onEditClick = {
                         editedPost = post
                         showDialog = true
                     }, onDeleteClick = {
                         postList = postList - post
-                    })
+                    },mAuth)
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -1160,9 +1164,10 @@ fun EditPostDialog(
 fun PostCard(
     post: Post,
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit, mAuth: FirebaseAuth
 ) {
     var showOptions by remember { mutableStateOf(false) }
+    val userName = FirebaseAuth.getInstance().currentUser
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1219,6 +1224,15 @@ fun PostCard(
                         .size(32.dp)
                         .background(Color.Gray) // 임시로 회색 배경 사용
                 ) {
+                    val user: FirebaseUser? = mAuth.currentUser
+                    val selectedUri = user?.photoUrl
+                    AsyncImage(
+                        model = selectedUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                    )
                     // 실제 프로필 사진을 표시하는 코드를 여기에 추가
                 }
 
@@ -1226,7 +1240,7 @@ fun PostCard(
 
                 // 사용자명
                 Text(
-                    text = post.author,
+                    text = userName?.displayName?:"",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
