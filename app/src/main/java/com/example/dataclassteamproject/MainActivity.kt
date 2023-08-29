@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -78,13 +77,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -113,11 +108,9 @@ import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -388,12 +381,12 @@ fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
     val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
 
     Scaffold(
@@ -409,7 +402,7 @@ fun HomeScreen(navController: NavController) {
                 actions = {
                     IconButton(onClick = { navController.navigate("newboard") }) {
                         Image(
-                            painter = painterResource(id = R.drawable.top_addboard),
+                            painter = painterResource(id = R.drawable.ic_android_black_24dp),
                             contentDescription = null,
                             modifier = Modifier.size(35.dp)
                         )
@@ -432,16 +425,18 @@ fun HomeScreen(navController: NavController) {
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
                         boardtitle = "공지게시판",
-                        onClick = {})
+                        onClick = {}
+                    )
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
-                        boardtitle = "점심메뉴게시판"
+                        boardtitle = "점심메뉴게시판",
+                        onClick = { navController.navigate("lunchMenuScreenRoute") }
                     )
-                    { navController.navigate("lunchMenuScreenRoute") }
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
                         boardtitle = "내 게시판",
-                        onClick = {})
+                        onClick = {}
+                    )
                     Spacer(modifier = Modifier.height(150.dp))
                 }
                 Divider(
@@ -450,7 +445,7 @@ fun HomeScreen(navController: NavController) {
                         .fillMaxWidth()
                         .width(0.5.dp)
                 )
-                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
+//                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
                 HomeBoardTitle(
                     icon = R.drawable.ic_android_black_24dp,
                     boardtitle = "점심메뉴게시판",
@@ -808,12 +803,12 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 fun NewBoardScreen() {
     var name by remember { mutableStateOf("") }
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
     Column {
         TextField(
             value = name,
@@ -822,7 +817,7 @@ fun NewBoardScreen() {
             placeholder = { Text(text = "") }
         )
         Button(onClick = {
-            val newBoardIcon = R.drawable.middle_board
+            val newBoardIcon = R.drawable.ic_android_black_24dp
             val newBoardTitle = name
             val newBoard = Pair(newBoardIcon, newBoardTitle)
         }) {
@@ -833,13 +828,13 @@ fun NewBoardScreen() {
 
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
+fun HomeBoardTitle(icon: Int, boardtitle: String, onClick:()->Unit) {
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -848,7 +843,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             .padding(horizontal = 10.dp, vertical = 5.dp)
             .fillMaxWidth()
             .background(Color.White)
-            .clickable { }
+            .clickable { onClick() }
     ) {
         Image(
             painter = painterResource(id = icon),
@@ -859,7 +854,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
             text = boardtitle,
             color = Color.DarkGray,
             fontSize = 15.sp,
-            fontFamily = nanumbarngothic,
+//            fontFamily = nanumbarngothic,
             fontWeight = FontWeight.Normal
         )
     }
@@ -876,56 +871,6 @@ fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
         color = Color.DarkGray
     )
 }
-
-
-@Composable
-fun TestScreen() {
-    var selectUri by remember { mutableStateOf<Uri?>(null) }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        //url == 유니크한 경로
-        onResult = { uri ->
-            selectUri = uri
-        }
-    )
-    Button(onClick = {
-        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-    }) {
-        Text(text = "이미지 uri 가져오기")
-    }
-    selectUri?.let { uri ->
-        uploadFileToFirebaseStorage(
-        fileUri = uri,
-        onComplete = {
-
-            })
-    }
-}
-
-fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
-    val storageRef = FirebaseStorage.getInstance().reference
-    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val fileName = "file_$timeStamp" // 현재 날짜와 시간을 사용한 고유한 파일 이름 생성
-    val fileReference = storageRef.child(fileName)
-
-    val uploadTask = fileReference.putFile(fileUri)
-    uploadTask.continueWithTask { task ->
-        if (!task.isSuccessful) {
-            task.exception?.let {
-                throw it
-            }
-        }
-        fileReference.downloadUrl
-    }.addOnCompleteListener { task ->
-        if (task.isSuccessful) {
-            val downloadUri = task.result.toString()
-            onComplete(downloadUri) // 업로드 완료 시 다운로드 URL 전달
-        }
-    }
-}
-
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
