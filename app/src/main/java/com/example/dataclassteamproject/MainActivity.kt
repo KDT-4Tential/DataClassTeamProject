@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
@@ -94,6 +95,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -276,7 +278,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("boardview") {
-                        BoardViewScreen(navController, mAuth)
+                        BoardViewScreen(navController)
                     }
                     composable("workspace") {
                         WorkSpaceChattingScreen(navController, mAuth)
@@ -292,6 +294,9 @@ class MainActivity : ComponentActivity() {
                             signInClicked = {
                                 launcher.launch(signInIntent)
                             })
+                    }
+                    composable("makeboard") {
+                        MakeBoardScreen(navController, mAuth)
                     }
                     composable("homeScreenRoute") { HomeScreen(navController) }
                     composable("lunchMenuScreenRoute") { LunchMenuScreen(navController) }
@@ -2406,12 +2411,11 @@ data class Post(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
+fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
-    var showBottomBar by remember { mutableStateOf(false) }
     val user: FirebaseUser? = mAuth.currentUser
 
     var uploadedImageUrl by remember { mutableStateOf("") }
@@ -2419,15 +2423,6 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
 
     loadPosts { posts ->
         postList = posts
-    }
-
-    // Dialog state
-    var showDialog by remember { mutableStateOf(false) }
-    var editedPost by remember { mutableStateOf<Post?>(null) }
-
-    fun getCurrentDate(): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd")
-        return sdf.format(Date())
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -2438,6 +2433,7 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
+                navController.navigate("boardview")
             }
             title = ""
             content = ""
@@ -2449,119 +2445,104 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
         return title.isNotBlank() && content.isNotBlank()
     }
 
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        content = { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                contentPadding = paddingValues
-            ) {
-                items(postList) { post ->
-                    PostCard(
-                        post,
-                        onEditClick = {
-                            editedPost = post
-                            showDialog = true
-                        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("제목") },
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-        },
-        bottomBar = {
-            if (showBottomBar) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp)) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = title,
-                            onValueChange = {
-                                title = it
-                            },
-                            label = { Text("제목") }
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("boardview")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "뒤로 가기"
                         )
-                        // 제목 입력 필드
-                        IconButton(
-                            onClick = {
-                                launcher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                                // 이미지 업로드 다이얼로그를 열거나 이미지 선택 로직을 호출합니다.
-                                // 이미지 선택이 완료되면 selectedImageUri에 선택한 이미지의 Uri가 설정됩니다.
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBox, // 원하는 아이콘을 선택하세요.
-                                contentDescription = "이미지 업로드"
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Row(modifier = Modifier.padding(16.dp)) {
-                        OutlinedTextField(
-                            value = content,
-                            onValueChange = {
-                                content = it
-                            },
-                            label = { Text("내용") }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBox,
+                            contentDescription = "사진"
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 게시 버튼
-                        Button(
-                            onClick = {
-                                if (uploadedImageUrl == "") {
-                                    val newPost = Post(
-                                        title = title,
-                                        author = user?.displayName ?: "",
-                                        date = getCurrentDate(),
-                                        content = content,
-                                        profile = user?.photoUrl.toString()
-                                    )
-                                    savePost(newPost)
-                                    // 게시 버튼 클릭 후 입력 필드 초기화
-                                }
-                                title = ""
-                                content = ""
-                            },
-                            enabled = canPost()
-                        ) {
-                            Text("게시하기")
-                        }
                     }
-                    // ... Rest of the code for the bottom bar
-                }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
                     IconButton(
                         onClick = {
-                            showBottomBar = true
+                            if (uploadedImageUrl == "") {
+                                val currentDate = SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault()).format(Date())
+                                val newPost = Post(
+                                    title = title,
+                                    author = user?.displayName ?: "",
+                                    date = currentDate,
+                                    content = content,
+                                    profile = user?.photoUrl.toString()
+                                )
+                                savePost(newPost)
+                                // 게시 버튼 클릭 후 입력 필드 초기화
+                            }
+                            title = ""
+                            content = ""
+                            navController.navigate("boardview")
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        enabled = canPost()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
-                            contentDescription = "게시글 추가"
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "저장"
                         )
                     }
                 }
-            }
+            )
         }
-    )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it)
+        ) {
+            TextField(
+                value = content,
+                onValueChange = { text -> content = text },
+                placeholder = { Text("사진을 가져오기 전에 내용과 제목을 입력해 주세요", fontStyle = FontStyle.Italic, color = Color.Gray) },
+                colors = TextFieldDefaults.textFieldColors(
+                    containerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
 
-    // Edit Post Dialog
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BoardViewScreen(navController: NavController) {
+
+    var postList by remember { mutableStateOf(listOf<Post>()) }
+
+    loadPosts { posts ->
+        postList = posts
+    }
+
+    // Dialog state
+    var showDialog by remember { mutableStateOf(false) }
+    var editedPost by remember { mutableStateOf<Post?>(null) }
+
     if (showDialog) {
         editedPost?.let { post ->
             EditPostDialog(
@@ -2580,6 +2561,74 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
             )
         }
     }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        IconButton(
+            onClick = {
+                navController.navigate("makeboard")
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
+                contentDescription = "게시글 추가"
+            )
+        }
+    }
+
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "공지사항") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("home")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "뒤로 가기"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            navController.navigate("makeboard")
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add, // 원하는 아이콘을 선택하세요.
+                            contentDescription = "게시글 추가"
+                        )
+                    }
+                }
+            )
+        }
+    )
+    { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentPadding = paddingValues
+        ) {
+            items(postList.reversed()) { post ->
+                PostCard(
+                    post,
+                    onEditClick = {
+                        editedPost = post
+                        showDialog = true
+                    },
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -2689,7 +2738,6 @@ fun PostCard(
                     }
                     if (showOptions) {
                         Row(
-//                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
                             TextButton(
@@ -2745,7 +2793,6 @@ fun PostCard(
                 // 사용자명
                 Text(
                     text = post.author,
-//                    fontWeight = FontWeight.Bold,
                     fontSize = 12.sp
                 )
             }
