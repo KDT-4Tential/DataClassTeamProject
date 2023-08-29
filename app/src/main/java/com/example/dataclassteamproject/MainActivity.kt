@@ -2121,10 +2121,10 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
 
     val clipboardManager = LocalClipboardManager.current
 
-    var uploadedImageUrl by remember { mutableStateOf("") }
     var isImageExpanded by remember { mutableStateOf(false) }
     var expandedImageUri by remember { mutableStateOf("") }
     var isModalVisible by remember { mutableStateOf(false) }
+    var uploadedImageUrl by remember { mutableStateOf("") }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
@@ -2400,7 +2400,8 @@ data class Post(
     val author: String = "",
     val date: String = "",
     val content: String = "",
-    val profile: String = ""
+    val profile: String = "",
+    val imageUrl: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2408,11 +2409,12 @@ data class Post(
 fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
-    var titleState by remember { mutableStateOf(TextFieldValue()) }
-    var contentState by remember { mutableStateOf(TextFieldValue()) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
     var showBottomBar by remember { mutableStateOf(false) }
     val user: FirebaseUser? = mAuth.currentUser
+
+    var uploadedImageUrl by remember { mutableStateOf("") }
 
 
     loadPosts { posts ->
@@ -2428,27 +2430,23 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
         return sdf.format(Date())
     }
 
-    // 이미지 업로드 함수
-    fun uploadImage(uri: Uri) {
-        // 이미지 업로드 로직을 구현하세요.
-        // 이 함수에서는 선택한 이미지의 Uri를 받아서 업로드하는 작업을 수행합니다.
-        // 예를 들어, Firebase Storage를 사용하여 이미지를 업로드할 수 있습니다.
-    }
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            selectedImageUri = uri
-            // 이미지가 선택되면 선택한 이미지의 Uri가 selectedImageUri에 설정됩니다.
+            uri?.let {
+                uploadPostImage(title, content, it, mAuth,
+                    onImageUploaded = { imageUrl ->
+                        uploadedImageUrl = imageUrl
+                    })
+            }
+            title = ""
+            content = ""
         }
     )
 
-    // 게시글 업데이트 처리
-//    val onPostSubmitted: (Post) -> Unit = { newPost ->
-//        postList = postList + newPost
-//    }
+
     fun canPost(): Boolean {
-        return titleState.text.isNotBlank() && contentState.text.isNotBlank()
+        return title.isNotBlank() && content.isNotBlank()
     }
 
     Scaffold(
@@ -2481,9 +2479,9 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
                     Row(modifier = Modifier.padding(16.dp)) {
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = titleState.text,
+                            value = title,
                             onValueChange = {
-                                titleState = TextFieldValue(it)
+                                title = it
                             },
                             label = { Text("제목") }
                         )
@@ -2507,9 +2505,9 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
                     }
                     Row(modifier = Modifier.padding(16.dp)) {
                         OutlinedTextField(
-                            value = contentState.text,
+                            value = content,
                             onValueChange = {
-                                contentState = TextFieldValue(it)
+                                content = it
                             },
                             label = { Text("내용") }
                         )
@@ -2519,17 +2517,19 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
                         // 게시 버튼
                         Button(
                             onClick = {
-                                val newPost = Post(
-                                    title = titleState.text,
-                                    author = user?.displayName ?: "",
-                                    date = getCurrentDate(),
-                                    content = contentState.text,
-                                    profile = user?.photoUrl.toString()
-                                )
-                                savePost(newPost)
-                                // 게시 버튼 클릭 후 입력 필드 초기화
-                                titleState = TextFieldValue("")
-                                contentState = TextFieldValue("")
+                                if (uploadedImageUrl == "") {
+                                    val newPost = Post(
+                                        title = title,
+                                        author = user?.displayName ?: "",
+                                        date = getCurrentDate(),
+                                        content = content,
+                                        profile = user?.photoUrl.toString()
+                                    )
+                                    savePost(newPost)
+                                    // 게시 버튼 클릭 후 입력 필드 초기화
+                                }
+                                title = ""
+                                content = ""
                             },
                             enabled = canPost()
                         ) {
@@ -2678,41 +2678,51 @@ fun PostCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End // Right align
             ) {
-                IconButton(
-                    onClick = { showOptions = !showOptions },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings, // 원하는 아이콘을 선택하세요.
-                        contentDescription = "Options"
-                    )
+                Column {
+                    IconButton(
+                        onClick = { showOptions = !showOptions },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings, // 원하는 아이콘을 선택하세요.
+                            contentDescription = "Options"
+                        )
+                    }
+                    if (showOptions) {
+                        Row(
+//                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    onEditClick()
+                                },
+                                modifier = Modifier.padding(end = 16.dp)
+                            ) {
+                                Text("수정")
+                            }
+                            TextButton(
+                                onClick = {
+                                    val database = Firebase.database
+                                    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                                    postRef.child("${post.key}").setValue(null)
+                                }
+                            ) {
+                                Text("삭제")
+                            }
+                        }
+                    }
+
                 }
             }
 
-            // Options Menu
-            if (showOptions) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = {
-                            onEditClick()
-                        },
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        Text("수정")
-                    }
-                    TextButton(
-                        onClick = {
-                            val database = Firebase.database
-                            val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
-                            postRef.child("${post.key}").setValue(null)
-                        }
-                    ) {
-                        Text("삭제")
-                    }
-                }
-            }
+            Text(
+                text = post.title,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 35.sp
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             // 사용자 프로필 부분
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -2735,31 +2745,41 @@ fun PostCard(
                 // 사용자명
                 Text(
                     text = post.author,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+//                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = post.title,
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = post.content,
-                fontSize = 16.sp
-            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "게시일: ${post.date}",
                 fontSize = 14.sp,
                 color = Color.Gray
             )
+
+            if (!post.imageUrl.isNullOrEmpty()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Image(
+                        painter = rememberAsyncImagePainter(post.imageUrl),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .size(400.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+
+            Text(
+                text = post.content,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+
         }
     }
 }
@@ -2797,15 +2817,32 @@ fun loadPosts(onDataChange: (List<Post>) -> Unit) {
     })
 }
 
+fun uploadPostImage(title: String, content: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+    val storage = FirebaseStorage.getInstance()
+    val storageRef = storage.reference
 
 
-//@Preview(showBackground = true)
-//@Composable
-//fun DefaultPreview() {
-//    DataClassTeamProjectTheme {
-//        ScheduleScreen(navController = rememberNavController(),
-//            onPreviousMonthClick = {},
-//            onNextMonthClick = {}
-//        )
-//    }
-//}
+    val imageRef = storageRef.child("images/${uri.lastPathSegment}")
+    imageRef.putFile(uri)
+        .addOnSuccessListener { taskSnapshot ->
+            // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
+            taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
+                val imageUrl = downloadUri.toString()
+                val user = mAuth.currentUser
+                val currentDate = SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault()).format(Date())
+                val newPost = Post(
+                    title = title,
+                    author = user?.displayName ?: "",
+                    date = currentDate,
+                    content = content,
+                    profile = user?.photoUrl.toString(),
+                    imageUrl = imageUrl
+                )
+                savePost(newPost)
+                onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
+            }
+        }
+        .addOnFailureListener {
+            // 업로드 실패 처리
+        }
+}
