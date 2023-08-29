@@ -76,7 +76,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -304,10 +303,13 @@ fun uploadImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit
             // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
             taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
                 val imageUrl = downloadUri.toString()
+                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 val chatMessage = ChatMessage(
-                    message = "이미지업로드",
+                    message = "이미지 업로드",
                     userId = user?.uid,
                     userName = user?.displayName,
+                    uploadDate = currentDate,
+                    profileString = user?.photoUrl.toString(),
                     imageUrl = imageUrl // imageUrl 설정
                 )
                 saveChatMessage(chatMessage)
@@ -733,25 +735,25 @@ fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
 }
 
 @Composable
-fun ShowImageScreen(){
-
-}
-
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
     var uploadedImageUrl by remember { mutableStateOf("") }
+    var isImageExpanded by remember { mutableStateOf(false) }
+    var expandedImageUri by remember { mutableStateOf("") }
+    var isModalVisible by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            uri?.let { uploadImage(it, mAuth,
-                onImageUploaded = {imageUrl ->
-                uploadedImageUrl = imageUrl
-            }) }
+            uri?.let {
+                uploadImage(it, mAuth,
+                    onImageUploaded = { imageUrl ->
+                        uploadedImageUrl = imageUrl
+                    })
+            }
         }
     )
 
@@ -799,9 +801,11 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "추가기능",
-                    modifier = Modifier.clickable {
-                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }
+                    modifier = Modifier
+                        .clickable {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }
+                        .padding(10.dp)
                 )
                 TextField(
                     value = chatmessage,
@@ -817,24 +821,25 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                     )
                 )
                 Icon(imageVector = Icons.Default.Send, contentDescription = "메세지 보내기버튼",
-                    modifier = Modifier.clickable {
-                        if (chatmessage.isNotEmpty()) {
-                            val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                            val newChatMessage =
-                                ChatMessage(
-                                    message = chatmessage,
-                                    userId = user?.uid,
-                                    userName = user?.displayName,
-                                    uploadDate = currentDate,
-                                    profileString = user?.photoUrl.toString()
-                                )
-                            saveChatMessage(newChatMessage)
-                            chatmessage = ""
-                        }
-                    })
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .clickable {
+                            if (chatmessage.isNotEmpty()) {
+                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                                val newChatMessage =
+                                    ChatMessage(
+                                        message = chatmessage,
+                                        userId = user?.uid,
+                                        userName = user?.displayName,
+                                        uploadDate = currentDate,
+                                        profileString = user?.photoUrl.toString()
+                                    )
+                                saveChatMessage(newChatMessage)
+                                chatmessage = ""
+                            }
+                        })
             }
         }
-
     }) { innerPadding ->
         LazyColumn(
             reverseLayout = true,
@@ -847,27 +852,6 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
                 val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
-
-                val currentDate = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
-                val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-
-                // 00시가 되었을 때만 Divider와 날짜 추가
-                if (currentTime == "00:00") {
-                    Divider(
-                        color = Color.Gray,
-                        thickness = 1.dp,
-                        modifier = Modifier
-                            .padding(top = 8.dp, bottom = 8.dp)
-                            .fillMaxWidth()
-                    )
-                    Text(
-                        text = currentDate,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.LightGray)
-                            .padding(4.dp)
-                    )
-                }
 
                 Column(
                     modifier = Modifier
@@ -905,25 +889,34 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                                         color = Color.LightGray
                                     )
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                                        .padding(8.dp)
-                                ) {
-                                    if (message.imageUrl != null && message.imageUrl == uploadedImageUrl) {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(message.imageUrl),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .clip(RoundedCornerShape(8.dp))
+                                Column {
+                                        if (!message.imageUrl.isNullOrEmpty()) {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(message.imageUrl),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(100.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable {
+                                                        isImageExpanded = !isImageExpanded
+                                                        if (isImageExpanded) {
+                                                            expandedImageUri = message.imageUrl
+                                                            isModalVisible = true  // 모달을 열도록 상태 변경
+                                                        }
+                                                    }
+                                            )
+                                        }
+                                    Box(
+                                        modifier = Modifier
+                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                            .padding(8.dp)
+                                    ) {
+                                        Text(
+                                            text = message.message ?: "",
+                                            fontSize = 16.sp,
+                                            color = textColor
                                         )
                                     }
-                                    Text(
-                                        text = message.message ?: "",
-                                        fontSize = 16.sp,
-                                        color = textColor
-                                    )
                                 }
                                 if (!isCurrentUserMessage) {
                                     Text(
@@ -937,7 +930,22 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                     }
                 }
             }
-
+        }
+    }
+    if (isModalVisible) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable { isModalVisible = false }  // 모달 클릭 시 닫기
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(expandedImageUri),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { isModalVisible = false }  // 이미지 클릭 시 닫기
+            )
         }
     }
 }
