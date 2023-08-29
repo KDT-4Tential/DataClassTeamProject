@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,7 +64,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -737,6 +742,7 @@ fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
+    val context = LocalContext.current
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
@@ -744,6 +750,8 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
     var isImageExpanded by remember { mutableStateOf(false) }
     var expandedImageUri by remember { mutableStateOf("") }
     var isModalVisible by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -756,9 +764,6 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
             }
         }
     )
-
-
-
     loadChatMessages { messages ->
         chatMessages = messages
     }
@@ -779,7 +784,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                 }
             },
             actions = {
-                IconButton(onClick = { navController.navigate("showimage") }) {
+                IconButton(onClick = {  }) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search"
@@ -914,7 +919,12 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
                                         Text(
                                             text = message.message ?: "",
                                             fontSize = 16.sp,
-                                            color = textColor
+                                            color = textColor,
+                                            modifier = Modifier.pointerInput(Unit){ detectTapGestures(onLongPress = {
+                                                val annotatedString = AnnotatedString(message.message?:"")
+                                                clipboardManager.setText(annotatedString)
+                                                Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
+                                            }) }
                                         )
                                     }
                                 }
