@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
@@ -279,7 +280,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("boardview") {
-                        BoardViewScreen(navController, mAuth)
+                        BoardViewScreen(navController)
                     }
                     composable("workspace") {
                         WorkSpaceChattingScreen(navController, mAuth)
@@ -295,6 +296,9 @@ class MainActivity : ComponentActivity() {
                             signInClicked = {
                                 launcher.launch(signInIntent)
                             })
+                    }
+                    composable("makeboard") {
+                        MakeBoardScreen(navController, mAuth)
                     }
                     composable("homeScreenRoute") { HomeScreen(navController) }
                     composable("lunchMenuScreenRoute") { LunchMenuScreen(navController) }
@@ -1670,10 +1674,7 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat(
-                                    "HH:mm",
-                                    Locale.getDefault()
-                                ).format(Date())
+                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -1698,8 +1699,7 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor =
-                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -1757,10 +1757,7 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(
-                                                backgroundColor,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
+                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -1769,14 +1766,9 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString =
-                                                        AnnotatedString(message.message ?: "")
+                                                    val annotatedString = AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(
-                                                        context,
-                                                        "클립보드에 복사되었습니다",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
                                                 })
                                             }
                                         )
@@ -1816,10 +1808,8 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
 
 
 fun saveTeamChatMessage(chatMessage: ChatMessage) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef =
-        database.getReference("chattings").child("teamproject") // "chat"이라는 경로로 데이터를 저장
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chattings").child("teamproject") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
     newMessageRef.setValue(chatMessage)
@@ -1827,8 +1817,7 @@ fun saveTeamChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadTeamChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("teamproject")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -1968,10 +1957,7 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat(
-                                    "HH:mm",
-                                    Locale.getDefault()
-                                ).format(Date())
+                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -1996,8 +1982,7 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor =
-                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -2055,10 +2040,7 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(
-                                                backgroundColor,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
+                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -2067,14 +2049,9 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString =
-                                                        AnnotatedString(message.message ?: "")
+                                                    val annotatedString = AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(
-                                                        context,
-                                                        "클립보드에 복사되었습니다",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
                                                 })
                                             }
                                         )
@@ -2114,8 +2091,7 @@ private fun WorkSpaceChattingScreen(navController: NavController, mAuth: Firebas
 
 
 fun saveWorkChatMessage(chatMessage: ChatMessage) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("workspace") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
@@ -2124,8 +2100,7 @@ fun saveWorkChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadWorkChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("workspace")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2185,10 +2160,10 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
 
     val clipboardManager = LocalClipboardManager.current
 
-    var uploadedImageUrl by remember { mutableStateOf("") }
     var isImageExpanded by remember { mutableStateOf(false) }
     var expandedImageUri by remember { mutableStateOf("") }
     var isModalVisible by remember { mutableStateOf(false) }
+    var uploadedImageUrl by remember { mutableStateOf("") }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
@@ -2266,10 +2241,7 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                         .padding(10.dp)
                         .clickable {
                             if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat(
-                                    "HH:mm",
-                                    Locale.getDefault()
-                                ).format(Date())
+                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
                                         message = chatmessage,
@@ -2294,8 +2266,7 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor =
-                    if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -2353,10 +2324,7 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                                     }
                                     Box(
                                         modifier = Modifier
-                                            .background(
-                                                backgroundColor,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
+                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -2365,14 +2333,9 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
                                             color = textColor,
                                             modifier = Modifier.pointerInput(Unit) {
                                                 detectTapGestures(onLongPress = {
-                                                    val annotatedString =
-                                                        AnnotatedString(message.message ?: "")
+                                                    val annotatedString = AnnotatedString(message.message ?: "")
                                                     clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(
-                                                        context,
-                                                        "클립보드에 복사되었습니다",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
                                                 })
                                             }
                                         )
@@ -2412,10 +2375,8 @@ private fun PlayGroundChattingScreen(navController: NavController, mAuth: Fireba
 
 
 fun savePlayChatMessage(chatMessage: ChatMessage) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef =
-        database.getReference("chattings").child("playground") // "chat"이라는 경로로 데이터를 저장
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val chatRef = database.getReference("chattings").child("playground") // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
     newMessageRef.setValue(chatMessage)
@@ -2423,8 +2384,7 @@ fun savePlayChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadPlayChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database =
-        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings").child("playground")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2479,20 +2439,135 @@ data class Post(
     val author: String = "",
     val date: String = "",
     val content: String = "",
-    val profile: String = ""
+    val profile: String = "",
+    val imageUrl: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
+fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
-    var titleState by remember { mutableStateOf(TextFieldValue()) }
-    var contentState by remember { mutableStateOf(TextFieldValue()) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var showBottomBar by remember { mutableStateOf(false) }
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
     val user: FirebaseUser? = mAuth.currentUser
 
+    var uploadedImageUrl by remember { mutableStateOf("") }
+
+
+    loadPosts { posts ->
+        postList = posts
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            uri?.let {
+                uploadPostImage(title, content, it, mAuth,
+                    onImageUploaded = { imageUrl ->
+                        uploadedImageUrl = imageUrl
+                    })
+                navController.navigate("boardview")
+            }
+            title = ""
+            content = ""
+        }
+    )
+
+
+    fun canPost(): Boolean {
+        return title.isNotBlank() && content.isNotBlank()
+    }
+
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("제목") },
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("boardview")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "뒤로 가기"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBox,
+                            contentDescription = "사진"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            if (uploadedImageUrl == "") {
+                                val currentDate = SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault()).format(Date())
+                                val newPost = Post(
+                                    title = title,
+                                    author = user?.displayName ?: "",
+                                    date = currentDate,
+                                    content = content,
+                                    profile = user?.photoUrl.toString()
+                                )
+                                savePost(newPost)
+                                // 게시 버튼 클릭 후 입력 필드 초기화
+                            }
+                            title = ""
+                            content = ""
+                            navController.navigate("boardview")
+                        },
+                        enabled = canPost()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "저장"
+                        )
+                    }
+                }
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it)
+        ) {
+            TextField(
+                value = content,
+                onValueChange = { text -> content = text },
+                placeholder = { Text("사진을 가져오기 전에 내용과 제목을 입력해 주세요", fontStyle = FontStyle.Italic, color = Color.Gray) },
+                colors = TextFieldDefaults.textFieldColors(
+                    containerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BoardViewScreen(navController: NavController) {
+
+    var postList by remember { mutableStateOf(listOf<Post>()) }
 
     loadPosts { posts ->
         postList = posts
@@ -2502,145 +2577,6 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
     var showDialog by remember { mutableStateOf(false) }
     var editedPost by remember { mutableStateOf<Post?>(null) }
 
-    fun getCurrentDate(): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd")
-        return sdf.format(Date())
-    }
-
-    // 이미지 업로드 함수
-    fun uploadImage(uri: Uri) {
-        // 이미지 업로드 로직을 구현하세요.
-        // 이 함수에서는 선택한 이미지의 Uri를 받아서 업로드하는 작업을 수행합니다.
-        // 예를 들어, Firebase Storage를 사용하여 이미지를 업로드할 수 있습니다.
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            selectedImageUri = uri
-            // 이미지가 선택되면 선택한 이미지의 Uri가 selectedImageUri에 설정됩니다.
-        }
-    )
-
-    // 게시글 업데이트 처리
-//    val onPostSubmitted: (Post) -> Unit = { newPost ->
-//        postList = postList + newPost
-//    }
-    fun canPost(): Boolean {
-        return titleState.text.isNotBlank() && contentState.text.isNotBlank()
-    }
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        content = { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                contentPadding = paddingValues
-            ) {
-                items(postList) { post ->
-                    PostCard(
-                        post,
-                        onEditClick = {
-                            editedPost = post
-                            showDialog = true
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-        },
-        bottomBar = {
-            if (showBottomBar) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp)) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = titleState.text,
-                            onValueChange = {
-                                titleState = TextFieldValue(it)
-                            },
-                            label = { Text("제목") }
-                        )
-                        // 제목 입력 필드
-                        IconButton(
-                            onClick = {
-                                launcher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                                // 이미지 업로드 다이얼로그를 열거나 이미지 선택 로직을 호출합니다.
-                                // 이미지 선택이 완료되면 selectedImageUri에 선택한 이미지의 Uri가 설정됩니다.
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBox, // 원하는 아이콘을 선택하세요.
-                                contentDescription = "이미지 업로드"
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    Row(modifier = Modifier.padding(16.dp)) {
-                        OutlinedTextField(
-                            value = contentState.text,
-                            onValueChange = {
-                                contentState = TextFieldValue(it)
-                            },
-                            label = { Text("내용") }
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 게시 버튼
-                        Button(
-                            onClick = {
-                                val newPost = Post(
-                                    title = titleState.text,
-                                    author = user?.displayName ?: "",
-                                    date = getCurrentDate(),
-                                    content = contentState.text,
-                                    profile = user?.photoUrl.toString()
-                                )
-                                savePost(newPost)
-                                // 게시 버튼 클릭 후 입력 필드 초기화
-                                titleState = TextFieldValue("")
-                                contentState = TextFieldValue("")
-                            },
-                            enabled = canPost()
-                        ) {
-                            Text("게시하기")
-                        }
-                    }
-                    // ... Rest of the code for the bottom bar
-                }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    IconButton(
-                        onClick = {
-                            showBottomBar = true
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
-                            contentDescription = "게시글 추가"
-                        )
-                    }
-                }
-            }
-        }
-    )
-
-    // Edit Post Dialog
     if (showDialog) {
         editedPost?.let { post ->
             EditPostDialog(
@@ -2659,6 +2595,74 @@ fun BoardViewScreen(navController: NavController, mAuth: FirebaseAuth) {
             )
         }
     }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        IconButton(
+            onClick = {
+                navController.navigate("makeboard")
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
+                contentDescription = "게시글 추가"
+            )
+        }
+    }
+
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "공지사항") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("home")
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "뒤로 가기"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            navController.navigate("makeboard")
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add, // 원하는 아이콘을 선택하세요.
+                            contentDescription = "게시글 추가"
+                        )
+                    }
+                }
+            )
+        }
+    )
+    { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth(),
+            contentPadding = paddingValues
+        ) {
+            items(postList.reversed()) { post ->
+                PostCard(
+                    post,
+                    onEditClick = {
+                        editedPost = post
+                        showDialog = true
+                    },
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -2757,42 +2761,50 @@ fun PostCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End // Right align
             ) {
-                IconButton(
-                    onClick = { showOptions = !showOptions },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings, // 원하는 아이콘을 선택하세요.
-                        contentDescription = "Options"
-                    )
+                Column {
+                    IconButton(
+                        onClick = { showOptions = !showOptions },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings, // 원하는 아이콘을 선택하세요.
+                            contentDescription = "Options"
+                        )
+                    }
+                    if (showOptions) {
+                        Row(
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    onEditClick()
+                                },
+                                modifier = Modifier.padding(end = 16.dp)
+                            ) {
+                                Text("수정")
+                            }
+                            TextButton(
+                                onClick = {
+                                    val database = Firebase.database
+                                    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                                    postRef.child("${post.key}").setValue(null)
+                                }
+                            ) {
+                                Text("삭제")
+                            }
+                        }
+                    }
+
                 }
             }
 
-            // Options Menu
-            if (showOptions) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = {
-                            onEditClick()
-                        },
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        Text("수정")
-                    }
-                    TextButton(
-                        onClick = {
-                            val database = Firebase.database
-                            val postRef =
-                                database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
-                            postRef.child("${post.key}").setValue(null)
-                        }
-                    ) {
-                        Text("삭제")
-                    }
-                }
-            }
+            Text(
+                text = post.title,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 35.sp
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             // 사용자 프로필 부분
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -2815,31 +2827,40 @@ fun PostCard(
                 // 사용자명
                 Text(
                     text = post.author,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 12.sp
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = post.title,
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = post.content,
-                fontSize = 16.sp
-            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "게시일: ${post.date}",
                 fontSize = 14.sp,
                 color = Color.Gray
             )
+
+            if (!post.imageUrl.isNullOrEmpty()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Image(
+                        painter = rememberAsyncImagePainter(post.imageUrl),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .size(400.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+
+            Text(
+                text = post.content,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+
         }
     }
 }
@@ -2852,6 +2873,7 @@ fun savePost(post: Post) {
 
     newPostRef.setValue(post)
 }
+
 
 fun loadPosts(onDataChange: (List<Post>) -> Unit) {
     val database = Firebase.database
@@ -2876,14 +2898,32 @@ fun loadPosts(onDataChange: (List<Post>) -> Unit) {
     })
 }
 
+fun uploadPostImage(title: String, content: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+    val storage = FirebaseStorage.getInstance()
+    val storageRef = storage.reference
 
-//@Preview(showBackground = true)
-//@Composable
-//fun DefaultPreview() {
-//    DataClassTeamProjectTheme {
-//        ScheduleScreen(navController = rememberNavController(),
-//            onPreviousMonthClick = {},
-//            onNextMonthClick = {}
-//        )
-//    }
-//}
+
+    val imageRef = storageRef.child("images/${uri.lastPathSegment}")
+    imageRef.putFile(uri)
+        .addOnSuccessListener { taskSnapshot ->
+            // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
+            taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
+                val imageUrl = downloadUri.toString()
+                val user = mAuth.currentUser
+                val currentDate = SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault()).format(Date())
+                val newPost = Post(
+                    title = title,
+                    author = user?.displayName ?: "",
+                    date = currentDate,
+                    content = content,
+                    profile = user?.photoUrl.toString(),
+                    imageUrl = imageUrl
+                )
+                savePost(newPost)
+                onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
+            }
+        }
+        .addOnFailureListener {
+            // 업로드 실패 처리
+        }
+}
