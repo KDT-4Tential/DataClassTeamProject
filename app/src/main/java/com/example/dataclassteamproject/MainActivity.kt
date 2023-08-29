@@ -19,15 +19,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,11 +26,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -58,38 +49,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,6 +67,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -110,30 +80,15 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -142,15 +97,10 @@ import com.google.firebase.database.FirebaseDatabase.getInstance
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase.getInstance
-import com.google.firebase.database.ValueEventListener
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -374,7 +324,7 @@ fun HomeScreen(navController: NavController) {
                 actions = {
                     IconButton(onClick = { navController.navigate("newboard") }) {
                         Image(
-                            painter = painterResource(id = R.drawable.top_addboard),
+                            painter = painterResource(id = R.drawable.baseline_post_add_24),
                             contentDescription = null,
                             modifier = Modifier.size(35.dp)
                         )
@@ -394,9 +344,9 @@ fun HomeScreen(navController: NavController) {
             ) {
                 Column {
                     HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                    HomeBoardTitle(icon = R.drawable.middle_announcementboard, boardtitle = "공지게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_lunch, boardtitle = "점심메뉴게시판")
-                    HomeBoardTitle(icon = R.drawable.middle_board, boardtitle = "내 게시판")
+                    HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지게시판")
+                    HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심메뉴게시판")
+                    HomeBoardTitle(icon = R.drawable.baseline_insert_drive_file_24, boardtitle = "내 게시판")
                     Spacer(modifier = Modifier.height(150.dp))
                 }
                 Divider(
@@ -407,7 +357,7 @@ fun HomeScreen(navController: NavController) {
                 )
                 HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
                 HomeBoardTitle(
-                    icon = R.drawable.middle_timer,
+                    icon = R.drawable.baseline_timer_24,
                     boardtitle = "회의 시간 타이머"
                 )
             }
@@ -433,7 +383,7 @@ fun NewBoardScreen() {
             placeholder = { Text(text = "") }
         )
         Button(onClick = {
-            val newBoardIcon = R.drawable.middle_board
+            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
             val newBoardTitle = name
             val newBoard = Pair(newBoardIcon, newBoardTitle)
         }) {
@@ -535,30 +485,7 @@ fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(navController: NavController) {
-    Scaffold(topBar = {
-        MyTopBar("home")
-    }, bottomBar = {
-        MyBottomBara(navController)
-    }) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            Column {
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-                Text(text = "게시판")
-            }
-        }
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
