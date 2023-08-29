@@ -34,7 +34,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -57,16 +57,34 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -90,6 +108,21 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.dataclassteamproject.ui.theme.DataClassTeamProjectTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -100,6 +133,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -113,8 +147,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Timer
+import kotlin.concurrent.scheduleAtFixedRate
 import java.util.Date
 import java.util.Locale
 
@@ -200,7 +238,6 @@ class MainActivity : ComponentActivity() {
 
         FirebaseApp.initializeApp(this)
         setContent {
-
             DataClassTeamProjectTheme {
 
                 val navController = rememberNavController()
@@ -242,10 +279,16 @@ class MainActivity : ComponentActivity() {
                     composable("home") {
                         HomeScreen(navController)
                     }
+                    composable("timer") {
+                        TimerScreen(navController)
+                    }
                     composable("dm") {
                         DmScreen(navController)
                     }
                     composable("schedule") {
+                        ScheduleScreen(
+                            navController = navController,
+                        )
                         ScheduleScreen(navController = navController)
                     }
                     composable("personal") {
@@ -277,7 +320,6 @@ class MainActivity : ComponentActivity() {
                         NextScreen(navController, selectedMenu)
                     }
                 }
-
             }
         }
     }
@@ -357,7 +399,8 @@ fun saveChatMessage(chatMessage: ChatMessage) {
 
 
 fun loadChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database =
+        getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
     val chatRef = database.getReference("chattings")
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -421,6 +464,10 @@ fun HomeScreen(navController: NavController) {
                     .fillMaxSize()
             ) {
                 Column {
+//                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "공지게시판")
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "점심메뉴게시판")
+//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "내 게시판")
 //                    HomeTitle(categorytitle = "게시판")
                     HomeBoardTitle(
                         icon = R.drawable.ic_android_black_24dp,
@@ -447,13 +494,139 @@ fun HomeScreen(navController: NavController) {
                 )
 //                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
                 HomeBoardTitle(
-                    icon = R.drawable.ic_android_black_24dp,
-                    boardtitle = "점심메뉴게시판",
-                    onClick = { navController.navigate("lunchMenuScreenRoute") }
+                    icon = R.drawable.baseline_add_alert_24,
+                    boardtitle = "회의 시간 타이머",
+                    onClick = {
+                        navController.navigate("timer") // "timer"는 TimerScreen의 route입니다.
+                    }
                 )
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimerScreen(navController: NavController) {
+    var remainingSeconds by remember { mutableStateOf(30 * 60) }
+    var initialRemainingSeconds by remember { mutableStateOf(30 * 60) }
+    var isRunning by remember { mutableStateOf(false) }
+    var isPaused by remember { mutableStateOf(false) }
+    var elapsedTimeMinutes by remember { mutableStateOf(0) }
+    var elapsedTimeSeconds by remember { mutableStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "타이머", color = Color.DarkGray) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                    }
+                }
+            )
+        },
+        content = { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatTime(remainingSeconds),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (isPaused) {
+                        if (elapsedTimeMinutes > 0) {
+                            "회의한 시간: $elapsedTimeMinutes 분 $elapsedTimeSeconds 초"
+                        } else {
+                            "회의한 시간: $elapsedTimeSeconds 초"
+                        }
+                    } else {
+                        ""
+                    },
+                    style = MaterialTheme.typography.titleLarge
+                    icon = R.drawable.ic_android_black_24dp,
+                    boardtitle = "점심메뉴게시판",
+                    onClick = { navController.navigate("lunchMenuScreenRoute") }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            if (!isRunning) {
+                                isRunning = true
+                                startTimer(onTick = { updatedValue ->
+                                    remainingSeconds = updatedValue
+                                })
+                            }
+                        },
+                        enabled = !isRunning
+                    ) {
+                        Text(text =  "회의시작")
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(
+                        onClick = {
+                                stopTimer()
+                            isPaused = true
+                            val elapsedTimeMillis = (initialRemainingSeconds - remainingSeconds) * 1000L
+                            elapsedTimeMinutes = (elapsedTimeMillis / 1000 / 60).toInt()
+                            elapsedTimeSeconds = ((elapsedTimeMillis / 1000) % 60).toInt()
+                        },
+                        enabled = isRunning
+                    ) {
+                        Text(text = "회의 끝")
+                    }
+                }
+            }
+        }
+    )
+}
+
+// 가상의 타이머 로직을 구현하는 함수라고 가정합니다.
+fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%02d:%02d", minutes, remainingSeconds)
+}
+
+private var timer: Timer? = null
+private var currentSeconds: Int = 0
+
+fun startTimer(onTick: (Int) -> Unit) {
+    // 타이머 로직을 구현하고 매 초마다 onTick 함수를 호출하여 UI를 업데이트합니다.
+    currentSeconds = 30 * 60
+
+    timer = Timer()
+    timer?.scheduleAtFixedRate(1000L, 1000L) {
+        if (currentSeconds > 0) {
+            currentSeconds--
+            onTick(currentSeconds)
+        } else {
+            // 타이머 종료
+            stopTimer()
+        }
+    }
+}
+
+fun resumeTimer() {
+    startTimer { updatedValue ->
+        currentSeconds = updatedValue
+    }
+}
+
+fun stopTimer() {
+    timer?.cancel()
+    timer = null
 }
 
 @Composable
@@ -828,7 +1001,7 @@ fun NewBoardScreen() {
 
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String, onClick:()->Unit) {
+fun HomeBoardTitle(icon: Int, boardtitle: String, onClick: () -> Unit) {
 //    val nanumbarngothic = FontFamily(
 //        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
 //        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
@@ -870,6 +1043,78 @@ fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
         modifier = Modifier.padding(10.dp),
         color = Color.DarkGray
     )
+}
+
+
+@Composable
+fun TestScreen() {
+    var selectUri by remember { mutableStateOf<Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        //url == 유니크한 경로
+        onResult = { uri ->
+            selectUri = uri
+        }
+    )
+    Button(onClick = {
+        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }) {
+        Text(text = "이미지 uri 가져오기")
+    }
+    selectUri?.let { uri ->
+        uploadFileToFirebaseStorage(
+        fileUri = uri,
+        onComplete = {
+
+        }) }
+}
+
+fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
+    val storageRef = FirebaseStorage.getInstance().reference
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val fileName = "file_$timeStamp" // 현재 날짜와 시간을 사용한 고유한 파일 이름 생성
+    val fileReference = storageRef.child(fileName)
+
+    val uploadTask = fileReference.putFile(fileUri)
+    uploadTask.continueWithTask { task ->
+        if (!task.isSuccessful) {
+            task.exception?.let {
+                throw it
+            }
+        }
+        fileReference.downloadUrl
+    }.addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            val downloadUri = task.result.toString()
+            onComplete(downloadUri) // 업로드 완료 시 다운로드 URL 전달
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(navController: NavController) {
+    Scaffold(topBar = {
+        MyTopBar("home")
+    }, bottomBar = {
+        MyBottomBara(navController)
+    }) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            Column {
+                Text(text = "게시판")
+                Text(text = "게시판")
+                Text(text = "게시판")
+                Text(text = "게시판")
+                Text(text = "게시판")
+                Text(text = "게시판")
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
