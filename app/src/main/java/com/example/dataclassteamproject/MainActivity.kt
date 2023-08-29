@@ -13,6 +13,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,25 +25,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,10 +61,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,6 +75,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -73,6 +86,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -85,7 +99,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -101,6 +114,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
@@ -123,7 +137,7 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        FirebaseApp.initializeApp(this)
+//        FirebaseApp.initializeApp(this)
         setContent {
             DataClassTeamProjectTheme {
 
@@ -170,9 +184,8 @@ class MainActivity : ComponentActivity() {
                         DmScreen(navController)
                     }
                     composable("schedule") {
-                        ScheduleScreen(navController = rememberNavController(),
-                            onPreviousMonthClick = {},
-                            onNextMonthClick = {}
+                        ScheduleScreen(
+                            navController = navController
                         )
                     }
                     composable("personal") {
@@ -191,11 +204,13 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
+                    composable("newboard") {
+                        NewBoardScreen()
+                    }
 //                    composable("test") {
 //                        TestScreen()
 //                    }
                     //추가해야할 스크린
-                    //채팅방
                     //글작성
                 }
             }
@@ -309,61 +324,96 @@ fun HomeScreen(navController: NavController) {
         Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
         Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
     )
-    val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
+    val todoList = remember { mutableStateListOf<String>() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "home", color = Color.DarkGray) },
+                title = { Text(text = "Home", color = Color.White, fontWeight = FontWeight.Bold) },
                 //탑바 색바꾸기
                 colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color(
-                        0xffFBFFDC
-                    )
+                    containerColor = Color(0xff75D1FF)
                 ),
                 actions = {
-                    IconButton(onClick = { navController.navigate("newboard") }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.baseline_post_add_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(35.dp)
-                        )
+                    Row {
+                        IconButton(onClick = { navController.navigate("timer") }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_timer_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(35.dp)
+                            )
+                        }
+                        IconButton(onClick = { navController.navigate("newboard") }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_post_add_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(35.dp)
+                            )
+                        }
                     }
                 }
             )
         },
-        bottomBar = {
-            MyBottomBara(navController)
-        }
+        bottomBar = { MyBottomBara(navController) }
     ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
-                Column {
-                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                    HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지게시판")
-                    HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심메뉴게시판")
-                    HomeBoardTitle(icon = R.drawable.baseline_insert_drive_file_24, boardtitle = "내 게시판")
-                    Spacer(modifier = Modifier.height(150.dp))
-                }
-                Divider(
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .width(0.5.dp)
-                )
-                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding), color = Color.White
+        ) {
+            Column {
+                //게시판 색바꾸기
+                HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
+                HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지 게시판")
+                HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심 게시판")
                 HomeBoardTitle(
-                    icon = R.drawable.baseline_timer_24,
-                    boardtitle = "회의 시간 타이머"
+                    icon = R.drawable.baseline_insert_drive_file_24,
+                    boardtitle = "내 게시판"
                 )
             }
+
         }
     }
 }
+
+@Composable
+fun HomeBoardTitle(icon: Int, boardtitle: String) {
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(Color.White)
+            .clickable { }
+            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
+            .wrapContentSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column {
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = boardtitle,
+                color = Color.DarkGray,
+                fontSize = 15.sp,
+                fontFamily = nanumbarngothic,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier
+                    .padding(start = 40.dp) // Adjust this padding as needed
+            )
+        }
+    }
+}
+
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -394,47 +444,14 @@ fun NewBoardScreen() {
 
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-            .fillMaxWidth()
-            .background(Color.White)
-            .clickable { }
-    ) {
-        Image(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            modifier = Modifier.size(35.dp) // icon size
-        )
-        Text(
-            text = boardtitle,
-            color = Color.DarkGray,
-            fontSize = 15.sp,
-            fontFamily = nanumbarngothic,
-            fontWeight = FontWeight.Normal
-        )
-    }
-}
-
-@Composable
 fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
     Text(
-        text = "$categorytitle",
+        text = categorytitle,
         fontFamily = fontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
-        modifier = Modifier.padding(10.dp),
-        color = Color.DarkGray
+        modifier = Modifier.padding(24.dp),
+        color = Color.Gray
     )
 }
 
@@ -456,10 +473,11 @@ fun TestScreen() {
     }
     selectUri?.let { uri ->
         uploadFileToFirebaseStorage(
-        fileUri = uri,
-        onComplete = {
+            fileUri = uri,
+            onComplete = {
 
-        }) }
+            })
+    }
 }
 
 fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
@@ -483,8 +501,6 @@ fun uploadFileToFirebaseStorage(fileUri: Uri, onComplete: (String) -> Unit) {
         }
     }
 }
-
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -520,8 +536,6 @@ fun DmScreen(navController: NavController) {
 @Composable
 fun ScheduleScreen(
     navController: NavController,
-    onPreviousMonthClick: () -> Unit,
-    onNextMonthClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -547,11 +561,9 @@ fun ScheduleScreen(
                 },
                 onPreviousMonthClick = {
                     selectedDate = selectedDate.minusMonths(1)
-                    onPreviousMonthClick()
                 },
                 onNextMonthClick = {
                     selectedDate = selectedDate.plusMonths(1)
-                    onNextMonthClick()
                 }
             )
         }
@@ -567,7 +579,7 @@ fun CalendarComposable(
     onPreviousMonthClick: () -> Unit,
     onNextMonthClick: () -> Unit
 ) {
-    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
+    val memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
     var showDialog by remember { mutableStateOf(false) }
 
 
@@ -634,7 +646,7 @@ fun CalendarComposable(
             itemsIndexed(daysInMonth) { index, day ->
                 val date = selectedDate.withDayOfMonth(day)
                 val isSelected = date == selectedDate
-                var memo = memoMap[date] ?: ""
+                val memo = memoMap[date] ?: ""
 
                 val dayOfWeekIndex = date.dayOfWeek.value - 1
                 val isFirstInRow = dayOfWeekIndex == 6
@@ -720,9 +732,9 @@ fun CalendarDay(
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = if (isPublicHoliday) Color.Red
-                    else if (isFirstInRow) Color.Red
-                    else if (isLastInRow) Color.Blue
-                    else Color.Black,
+            else if (isFirstInRow) Color.Red
+            else if (isLastInRow) Color.Blue
+            else Color.Black,
             modifier = Modifier
                 .background(if (isSelected) Color.White else Color.Transparent)
                 .padding(vertical = 2.dp, horizontal = 4.dp)
@@ -842,6 +854,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
     loadChatMessages { messages ->
         chatMessages = messages
     }
+
     Scaffold(topBar = {
         TopAppBar(
             title = {
@@ -860,7 +873,7 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 }
             },
             //탑바 색바꾸기
-            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
         )
     }, bottomBar = {
         BottomAppBar(
@@ -877,9 +890,15 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
                 TextField(value = chatmessage, onValueChange = { chatmessage = it })
                 Button(onClick = {
                     if (chatmessage.isNotEmpty()) {
-                        val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        val currentDate =
+                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                         val newChatMessage =
-                            ChatMessage(message = chatmessage, userId = user?.uid, userName = user?.displayName, uploadDate = currentDate)
+                            ChatMessage(
+                                message = chatmessage,
+                                userId = user?.uid,
+                                userName = user?.displayName,
+                                uploadDate = currentDate
+                            )
                         saveChatMessage(newChatMessage)
                         chatmessage = ""
                     }
@@ -898,7 +917,8 @@ private fun ChattingScreen(mAuth: FirebaseAuth) {
         ) {
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
+                val alignment =
+                    if (isCurrentUserMessage) Alignment.BottomEnd else Alignment.BottomStart
                 val backgroundColor = if (isCurrentUserMessage) Color.Gray else Color.Yellow
                 Box(
                     modifier = Modifier
@@ -976,39 +996,87 @@ private fun MyTopBar(topBarTitle: String) {
     TopAppBar(
         title = { Text(text = topBarTitle) },
         //탑바 색바꾸기
-        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff77D8D8))
     )
 }
 
 @Composable
 private fun MyBottomBara(navController: NavController) {
     BottomAppBar(
-        containerColor = Color.Gray
+        //바텀바 색바꾸기
+        containerColor = Color(0xff75D1FF)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Button(onClick = {
-                navController.navigate("home")
-            }) {
-                Text(text = "home")
+            //바텀바 아이콘 색바꾸기
+            Button(
+                onClick = {
+                    navController.navigate("home")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "home")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_home_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .padding(2.dp)
+                )
             }
-            Button(onClick = {
-                navController.navigate("dm")
-            }) {
-                Text(text = "DM")
+            Button(
+                onClick = {
+                    navController.navigate("dm")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "DM")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_chat_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
-            Button(onClick = {
-                navController.navigate("schedule")
-            }) {
-                Text(text = "스케쥴")
+            Button(
+                onClick = {
+                    navController.navigate("schedule")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "스케쥴")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_calendar_month_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
-            Button(onClick = {
-                navController.navigate("personal")
-            }) {
-                Text(text = "개인정보")
+            Button(
+                onClick = {
+                    navController.navigate("personal")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                //Text(text = "개인정보")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_person_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
         }
     }
@@ -1065,6 +1133,7 @@ fun BoardViewScreen(navController: NavController) {
     val onPostSubmitted: (Post) -> Unit = { newPost ->
         postList = postList + newPost
     }
+
     fun canPost(): Boolean {
         return titleState.text.isNotBlank() && contentState.text.isNotBlank()
     }
@@ -1373,8 +1442,6 @@ fun PostCard(
         }
     }
 }
-
-
 
 
 //@Preview(showBackground = true)
