@@ -421,11 +421,11 @@ fun HomeScreen(navController: NavController) {
             Column {
                 //게시판 색바꾸기
                 HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지 게시판")
-                HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심 게시판")
+                HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지 게시판", onClicked = {navController.navigate("boardview")})
+                HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심 게시판", onClicked = {navController.navigate("lunchMenuScreenRoute")})
                 HomeBoardTitle(
                     icon = R.drawable.baseline_insert_drive_file_24,
-                    boardtitle = "내 게시판"
+                    boardtitle = "내 게시판", onClicked = {}
                 )
             }
         }
@@ -433,7 +433,7 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String) {
+fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
     val nanumbarngothic = FontFamily(
         Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
         Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
@@ -444,7 +444,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String) {
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .background(Color.White)
-            .clickable { }
+            .clickable { onClicked() }
             .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
             .wrapContentSize(),
         contentAlignment = Alignment.Center
