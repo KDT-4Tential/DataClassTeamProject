@@ -19,6 +19,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,19 +31,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
@@ -77,6 +85,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -90,9 +103,26 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -131,6 +161,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
+import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -366,81 +401,59 @@ fun GoogleSignInButton(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-//    val nanumbarngothic = FontFamily(
-//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-//    )
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
     val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "home", color = Color.DarkGray) },
+                title = { Text(text = "Home", color = Color.White, fontWeight = FontWeight.Bold) },
                 //탑바 색바꾸기
                 colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color(
-                        0xffFBFFDC
-                    )
+                    containerColor = Color(0xff75D1FF)
                 ),
                 actions = {
-                    IconButton(onClick = { navController.navigate("newboard") }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_android_black_24dp),
-                            contentDescription = null,
-                            modifier = Modifier.size(35.dp)
-                        )
+                    Row {
+                        IconButton(onClick = { navController.navigate("timer") }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_timer_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(35.dp)
+                            )
+                        }
+                        IconButton(onClick = { navController.navigate("newboard") }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_post_add_24),
+                                contentDescription = null,
+                                modifier = Modifier.size(35.dp)
+                            )
+                        }
                     }
                 }
             )
         },
         bottomBar = {
-            MyBottomBar(navController)
+            MyBottomBara(navController)
         }
     ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
-                Column {
-//                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "공지게시판")
-//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "점심메뉴게시판")
-//                    HomeBoardTitle(icon = R.drawable.baseline_add_alert_24, boardtitle = "내 게시판")
-//                    HomeTitle(categorytitle = "게시판")
-                    HomeBoardTitle(
-                        icon = R.drawable.ic_android_black_24dp,
-                        boardtitle = "공지게시판",
-                        onClick = { navController.navigate("boardview") }
-                    )
-                    HomeBoardTitle(
-                        icon = R.drawable.ic_android_black_24dp,
-                        boardtitle = "점심메뉴게시판",
-                        onClick = { navController.navigate("lunchMenuScreenRoute") }
-                    )
-                    HomeBoardTitle(
-                        icon = R.drawable.ic_android_black_24dp,
-                        boardtitle = "내 게시판",
-                        onClick = {}
-                    )
-                    Spacer(modifier = Modifier.height(150.dp))
-                }
-                Divider(
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .width(0.5.dp)
-                )
-//                HomeTitle(categorytitle = "부가기능", fontFamily = nanumbarngothic)
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding), color = Color.White
+        ) {
+            Column {
+                //게시판 색바꾸기
+                HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
+                HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지 게시판")
+                HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심 게시판")
                 HomeBoardTitle(
-                    icon = R.drawable.baseline_add_alert_24,
-                    boardtitle = "회의 시간 타이머",
-                    onClick = {
-                        navController.navigate("timer") // "timer"는 TimerScreen의 route입니다.
-                    }
+                    icon = R.drawable.baseline_insert_drive_file_24,
+                    boardtitle = "내 게시판"
                 )
             }
         }
@@ -918,6 +931,45 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
                     Text("처음으로", color = Color.Black)
                 }
             }
+
+        }
+    }
+}
+
+@Composable
+fun HomeBoardTitle(icon: Int, boardtitle: String) {
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(Color.White)
+            .clickable { }
+            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
+            .wrapContentSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column {
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = boardtitle,
+                color = Color.DarkGray,
+                fontSize = 15.sp,
+                fontFamily = nanumbarngothic,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier
+                    .padding(start = 40.dp) // Adjust this padding as needed
+            )
         }
     }
 }
@@ -926,12 +978,12 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 fun NewBoardScreen() {
     var name by remember { mutableStateOf("") }
-//    val nanumbarngothic = FontFamily(
-//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-//    )
+    val nanumbarngothic = FontFamily(
+        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+    )
     Column {
         TextField(
             value = name,
@@ -940,7 +992,7 @@ fun NewBoardScreen() {
             placeholder = { Text(text = "") }
         )
         Button(onClick = {
-            val newBoardIcon = R.drawable.ic_android_black_24dp
+            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
             val newBoardTitle = name
             val newBoard = Pair(newBoardIcon, newBoardTitle)
         }) {
@@ -950,43 +1002,43 @@ fun NewBoardScreen() {
 }
 
 
-@Composable
-fun HomeBoardTitle(icon: Int, boardtitle: String, onClick: () -> Unit) {
+//@Composable
+//fun HomeBoardTitle(icon: Int, boardtitle: String) {
 //    val nanumbarngothic = FontFamily(
 //        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
 //        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
 //        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
 //        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
 //    )
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-            .fillMaxWidth()
-            .background(Color.White)
-            .clickable { onClick() }
-    ) {
-        Image(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            modifier = Modifier.size(35.dp) // icon size
-        )
-        Text(
-            text = boardtitle,
-            color = Color.DarkGray,
-            fontSize = 15.sp,
+//
+//    Row(
+//        verticalAlignment = Alignment.CenterVertically,
+//        horizontalArrangement = Arrangement.spacedBy(10.dp),
+//        modifier = Modifier
+//            .padding(horizontal = 10.dp, vertical = 5.dp)
+//            .fillMaxWidth()
+//            .background(Color.White)
+//            .clickable { }
+//    ) {
+//        Image(
+//            painter = painterResource(id = icon),
+//            contentDescription = null,
+//            modifier = Modifier.size(35.dp) // icon size
+//        )
+//        Text(
+//            text = boardtitle,
+//            color = Color.DarkGray,
+//            fontSize = 15.sp,
 //            fontFamily = nanumbarngothic,
-            fontWeight = FontWeight.Normal
-        )
-    }
-}
+//            fontWeight = FontWeight.Normal
+//        )
+//    }
+//}
 
 @Composable
 fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
     Text(
-        text = "$categorytitle",
+        text = categorytitle,
         fontFamily = fontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
@@ -1494,56 +1546,104 @@ fun PersonalInfoScreen(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun MyTopBar(topBarTitle: String) {
-    TopAppBar(
-        title = { Text(text = topBarTitle) },
-        //탑바 색바꾸기
-        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
-    )
-}
+    private fun MyTopBar(topBarTitle: String) {
+        TopAppBar(
+            title = { Text(text = topBarTitle) },
+            //탑바 색바꾸기
+            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff77D8D8))
+        )
+    }
 
 @Composable
 private fun MyBottomBar(navController: NavController) {
     BottomAppBar(
-        containerColor = Color.Gray
+        //바텀바 색바꾸기
+        containerColor = Color(0xff75D1FF)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Button(onClick = {
-                navController.navigate("home")
-            }) {
-                Text(text = "home")
+            //바텀바 아이콘 색바꾸기
+            Button(
+                onClick = {
+                    navController.navigate("home")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "home")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_home_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .padding(2.dp)
+                )
             }
-            Button(onClick = {
-                navController.navigate("dm")
-            }) {
-                Text(text = "DM")
+            Button(
+                onClick = {
+                    navController.navigate("dm")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "DM")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_chat_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
-            Button(onClick = {
-                navController.navigate("schedule")
-            }) {
-                Text(text = "스케쥴")
+            Button(
+                onClick = {
+                    navController.navigate("schedule")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                // Text(text = "스케쥴")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_calendar_month_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
-            Button(onClick = {
-                navController.navigate("personal")
-            }) {
-                Text(text = "개인정보")
+            Button(
+                onClick = {
+                    navController.navigate("personal")
+                },
+                shape = RoundedCornerShape(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xff75D1FF),
+                ),
+            ) {
+                //Text(text = "개인정보")
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_person_24),
+                    contentDescription = null, modifier = Modifier.size(30.dp)
+                )
+
             }
         }
     }
 }
 
-data class ChatMessage(
-    val message: String? = "메시지 오류",
-    val userId: String? = "UID 오류",
-    val userName: String? = "이름 오류",
-    val uploadDate: String? = "",
-    val profileString: String? = "",
-    val imageUrl: String? = ""
-)
-
+    data class ChatMessage(
+        val message: String? = "메시지 오류",
+        val userId: String? = "UID 오류",
+        val userName: String? = "이름 오류",
+        val uploadDate: String? = "",
+        val profileString: String? = "",
+        val imageUrl: String? = ""
+    )
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
