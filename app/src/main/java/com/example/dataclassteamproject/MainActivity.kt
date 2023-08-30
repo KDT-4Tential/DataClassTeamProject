@@ -1,11 +1,7 @@
 package com.example.dataclassteamproject
 
-import android.app.Activity
-import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -13,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,7 +41,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -58,6 +55,7 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -76,18 +74,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Bottom
+import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -142,7 +138,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.Timer
 import kotlin.concurrent.scheduleAtFixedRate
-
 
 
 class MainActivity : ComponentActivity() {
@@ -228,9 +223,6 @@ class MainActivity : ComponentActivity() {
                                 launcher.launch(signInIntent)
                             })
                     }
-                    composable("homeScreenRoute") {
-                        HomeScreen(navController)
-                    }
                     composable("lunchMenuScreenRoute") {
                         LunchMenuScreen(navController)
                     }
@@ -285,6 +277,7 @@ class MainActivity : ComponentActivity() {
 
 private fun NavGraphBuilder.ChattingScreens(navController: NavHostController, mAuth: FirebaseAuth) {
     composable("workspace") {
+
         ChattingScreen(navController, mAuth, "workspace")
     }
     composable("teamproject") {
@@ -302,17 +295,35 @@ private fun NavGraphBuilder.BoardViewsScreens(navController: NavHostController, 
     composable("makeNoticeBoard") {
         MakeBoardScreen(navController, mAuth, "notice")
     }
-    composable("my") {
-        BoardViewScreen(navController, "my", "makeMyBoard", "내게식판")
+    composable("Data Mining") {
+        BoardViewScreen(navController, "Data Mining", "make Data Mining", "Data Mining")
     }
-    composable("makeMyBoard") {
-        MakeBoardScreen(navController, mAuth, "my")
+    composable("make Data Mining") {
+        MakeBoardScreen(navController, mAuth, "Data Mining")
     }
-    composable("idontknow") {
-        BoardViewScreen(navController, "idontknow", "makeIDontKnowBoard", "여기다뭘해야될까요")
+    composable("AI System Architecture") {
+        BoardViewScreen(navController, "AI System Architecture", "make AI System Architecture", "AI System Architecture")
     }
-    composable("makeIDontKnowBoard") {
-        MakeBoardScreen(navController, mAuth, "idontknow")
+    composable("make AI System Architecture") {
+        MakeBoardScreen(navController, mAuth, "AI System Architecture")
+    }
+    composable("Computer Graphics") {
+        BoardViewScreen(navController, "Computer Graphics", "make Computer Graphics", "Computer Graphics")
+    }
+    composable("make Computer Graphics") {
+        MakeBoardScreen(navController, mAuth, "Computer Graphics")
+    }
+    composable("Object Oriented Programming") {
+        BoardViewScreen(navController, "Object Oriented Programming", "make Object Oriented Programming", "Object Oriented Programming")
+    }
+    composable("make Object Oriented Programming") {
+        MakeBoardScreen(navController, mAuth, "Object Oriented Programming")
+    }
+    composable("Computer Security") {
+        BoardViewScreen(navController, "Computer Security", "make Computer Security", "Computer Security")
+    }
+    composable("make Computer Security") {
+        MakeBoardScreen(navController, mAuth, "Computer Security")
     }
 }
 
@@ -384,25 +395,52 @@ fun HomeScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(innerPadding), color = Color.White
         ) {
-            Column {
-                //게시판 색바꾸기
-                HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                HomeBoardTitle(
-                    icon = R.drawable.baseline_announcement_24,
-                    boardtitle = "공지 게시판",
-                    onClicked = { navController.navigate("notice") })
-                HomeBoardTitle(
-                    icon = R.drawable.baseline_food_bank_24,
-                    boardtitle = "점심 게시판",
-                    onClicked = { navController.navigate("lunchMenuScreenRoute") })
-                HomeBoardTitle(
-                    icon = R.drawable.baseline_insert_drive_file_24,
-                    boardtitle = "내 게시판",
-                    onClicked = { navController.navigate("my") })
-                HomeBoardTitle(
-                    icon = R.drawable.baseline_insert_drive_file_24,
-                    boardtitle = "여긴 뭘로 할까요",
-                    onClicked = { navController.navigate("idontknow") })
+            LazyColumn {
+                item {
+                    HomeTitle(categorytitle = "Notice Board", fontFamily = nanumbarngothic)
+                    Divider()
+                    Row {
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_announcement_24,
+                            boardtitle = "Notice",
+                            onClicked = { navController.navigate("notice") })
+                    }
+                    HomeTitle(categorytitle = "Assignment Progress", fontFamily = nanumbarngothic)
+                    Divider()
+                    Row {
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_insert_drive_file_24,
+                            boardtitle = "Data Mining",
+                            onClicked = { navController.navigate("Data Mining") })
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_insert_drive_file_24,
+                            boardtitle = "AI System Architecture",
+                            onClicked = { navController.navigate("AI System Architecture") })
+                    }
+                    Row {
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_insert_drive_file_24,
+                            boardtitle = "Computer Graphics",
+                            onClicked = { navController.navigate("Computer Graphics") })
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_insert_drive_file_24,
+                            boardtitle = "Object Oriented Programming",
+                            onClicked = { navController.navigate("Object Oriented Programming") })
+                    }
+                    Row {
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_insert_drive_file_24,
+                            boardtitle = "Computer Security",
+                            onClicked = { navController.navigate("Computer Security") })
+                    }
+                    Divider()
+                    Row {
+                        HomeBoardTitle(
+                            icon = R.drawable.baseline_fastfood_24_wb,
+                            boardtitle = "점심 게시판",
+                            onClicked = { navController.navigate("lunchMenuScreenRoute") })
+                    }
+                }
             }
         }
     }
@@ -440,7 +478,7 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
             Text(
                 text = boardtitle,
                 color = Color.DarkGray,
-                fontSize = 20.sp,
+                fontSize = 16.sp,
                 fontFamily = nanumbarngothic,
                 fontWeight = FontWeight.Normal
             )
@@ -511,12 +549,13 @@ fun TimerScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "타이머", color = Color.DarkGray) },
+                title = { Text(text = "타이머", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
             )
         },
         content = { innerPadding ->
@@ -559,7 +598,12 @@ fun TimerScreen(navController: NavController) {
                                 })
                             }
                         },
-                        enabled = !isRunning
+                        enabled = !isRunning,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF), // 원하는 색상으로 변경
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(text = "회의시작")
                     }
@@ -573,7 +617,12 @@ fun TimerScreen(navController: NavController) {
                             elapsedTimeMinutes = (elapsedTimeMillis / 1000 / 60).toInt()
                             elapsedTimeSeconds = ((elapsedTimeMillis / 1000) % 60).toInt()
                         },
-                        enabled = isRunning
+                        enabled = isRunning,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF), // 원하는 색상으로 변경
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(text = "회의 끝")
                     }
@@ -620,28 +669,49 @@ fun stopTimer() {
     timer = null
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LunchMenuScreen(navController: NavController) {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Lunch Menu", color = Color.White, fontWeight = FontWeight.Bold) },
+                //탑바 색 바꾸기
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = Color(0xff75D1FF)
+                )
+            )
+        },
+        bottomBar = {
+            MyBottomBar(navController)
+        }
+    ) { innerPadding ->
+        Surface(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            color = MaterialTheme.colorScheme.background
         ) {
-            Box(
+            Column(
                 modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding), // innerPadding을 padding에 적용
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("아래의 버튼을 눌러 시작하세요!")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { navController.navigate("details") },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-            ) {
-                Text("메뉴 추천 시작!", color = Color.Black)
+                Box(
+                    modifier = Modifier
+                ) {
+                    Text("아래의 버튼을 눌러 시작하세요!")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { navController.navigate("details") },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xff75D1FF),
+                    )
+                ) {
+                    Text("메뉴 추천 시작!", color = Color.White)
+                }
             }
         }
     }
@@ -652,6 +722,7 @@ fun Greeting(text: String, fontWeight: FontWeight) {
     Text(text, fontWeight = fontWeight)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsScreen(navController: NavController) {
     var selectedMenu by remember { mutableStateOf("") }
@@ -666,51 +737,81 @@ fun DetailsScreen(navController: NavController) {
             insertMenuToFirestore(selectedMenu)
         }
     }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Lunch Menu", color = Color.White, fontWeight = FontWeight.Bold) },
+                //탑바 색 바꾸기
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = Color(0xff75D1FF)
+                )
+            )
+        },
+        bottomBar = {
+            MyBottomBar(navController)
+        }
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Greeting(buttonText, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    onClick = { navController.navigate("home") }  // "뒤로" 버튼을 클릭하면 "home" 목적지로 이동합니다.
+                Greeting(buttonText, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text("뒤로")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        selectedMenu = getRandomMenuExceptSelected(selectedMenu)
+                    Button(
+                        onClick = { navController.navigate("lunchMenuScreenRoute") },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("뒤로")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            selectedMenu = getRandomMenuExceptSelected(selectedMenu)
 
-                        // Firestore에 메뉴 저장
-                        GlobalScope.launch {
-                            insertMenuToFirestore(selectedMenu)
-                        }
+                            // Firestore에 메뉴 저장
+                            GlobalScope.launch {
+                                insertMenuToFirestore(selectedMenu)
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("다시 뽑기")
                     }
-                ) {
-                    Text("다시 뽑기")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        navController.navigate("next_destination/$selectedMenu")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            navController.navigate("next_destination/$selectedMenu")
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("다음")
                     }
-                ) {
-                    Text("다음")
                 }
             }
         }
+
     }
+
 }
 
 val db = FirebaseFirestore.getInstance()
@@ -733,6 +834,7 @@ fun getRandomMenuExceptSelected(selected: String): String {
     return remainingMenus.random()
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NextScreen(navController: NavController, selectedMenu: String) {
     val koreanDishes = listOf(
@@ -906,70 +1008,96 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
             }
         }
     }
-
-
     val buttonText = "추천 메뉴는 '$recommendedDish'입니다!"
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Lunch Menu", color = Color.White, fontWeight = FontWeight.Bold) },
+                //탑바 색 바꾸기
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = Color(0xff75D1FF)
+                )
+            )
+        },
+        bottomBar = {
+            MyBottomBar(navController)
+        }
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Greeting(buttonText, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    onClick = { navController.navigate("details") }
+                Greeting(buttonText, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text("뒤로", color = Color.Black)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    onClick = {
-                        GlobalScope.launch {
-                            repeat(20) {
-                                delay(50)
-                                recommendedDish = when (selectedMenu) {
-                                    "한식" -> koreanDishes.random()
-                                    "양식" -> westernDishes.random()
-                                    "중식" -> chineseDishes.random()
-                                    "일식" -> japaneseDishes.random()
-                                    else -> ""
+                    Button(
+                        onClick = { navController.navigate("details") },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("뒤로", color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            GlobalScope.launch {
+                                repeat(20) {
+                                    delay(50)
+                                    recommendedDish = when (selectedMenu) {
+                                        "한식" -> koreanDishes.random()
+                                        "양식" -> westernDishes.random()
+                                        "중식" -> chineseDishes.random()
+                                        "일식" -> japaneseDishes.random()
+                                        else -> ""
+                                    }
                                 }
                             }
-                        }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("다시 뽑기", color = Color.White)
                     }
-                ) {
-                    Text("다시 뽑기", color = Color.Black)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { navController.navigate("home") },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff75D1FF),
+                        )
+                    ) {
+                        Text("처음으로", color = Color.White)
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    onClick = { navController.navigate("home") }
-                ) {
-                    Text("처음으로", color = Color.Black)
-                }
+
             }
-
         }
-    }
-}
 
+    }
+
+
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DmScreen(navController: NavController) {
     Scaffold(topBar = {
-        MyTopBar("Dm")
+        MyTopBar("DM")
     }, bottomBar = {
         MyBottomBar(navController)
     }) { innerPadding ->
@@ -978,38 +1106,59 @@ fun DmScreen(navController: NavController) {
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             Column {
-                Box(
+                ChatItem("Work Space", R.drawable.baseline_3p_24) {
+                    navController.navigate("workspace")
+                }
+                Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
-                        .border(1.dp, Color.Black, RectangleShape)
-                        .clickable { navController.navigate("workspace") }
-                ) {
-                    Text(text = "Work Space")
+                        .height(1.dp), color = Color.Gray
+                ) // ChatItem 아래에 선 추가
+                Spacer(modifier = Modifier.height(8.dp))
+                ChatItem("Team Project", R.drawable.baseline_diversity_3_24) {
+                    navController.navigate("teamproject")
                 }
-                Box(
+                Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
-                        .border(1.dp, Color.Black, RectangleShape)
-                        .clickable { navController.navigate("teamproject") }
-                ) {
-                    Text(text = "Team Project")
+                        .height(1.dp), color = Color.Gray
+                ) // ChatItem 아래에 선 추가
+                Spacer(modifier = Modifier.height(8.dp))
+                ChatItem("Play Ground", R.drawable.baseline_interests_24) {
+                    navController.navigate("playground")
                 }
-                Box(
+                Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
-                        .border(1.dp, Color.Black, RectangleShape)
-                        .clickable { navController.navigate("playground") }
-                ) {
-                    Text(text = "Play Ground")
-                }
+                        .height(1.dp), color = Color.Gray
+                ) // ChatItem 아래에 선 추가
             }
         }
     }
 }
+
+@Composable
+fun ChatItem(text: String, @DrawableRes iconRes: Int, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(start = 16.dp)
+            .fillMaxWidth()
+            .height(80.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Image(
+            painter = painterResource(id = iconRes),
+            contentDescription = null, // Content description can be added if needed
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(text = text)
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1492,69 +1641,51 @@ private fun MyBottomBar(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            //바텀바 아이콘 색바꾸기
-            Button(
-                onClick = {
-                    navController.navigate("home")
-                },
-                shape = RoundedCornerShape(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xff75D1FF),
-                ), modifier = Modifier.padding(8.dp)
-            ) {
-                // Text(text = "home")
-                Image(
-                    painter = painterResource(id = R.drawable.baseline_home_24),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(30.dp)
-                )
-            }
-            Button(
-                onClick = {
-                    navController.navigate("dm")
-                },
-                shape = RoundedCornerShape(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xff75D1FF),
-                ), modifier = Modifier.padding(8.dp)
-            ) {
-                // Text(text = "DM")
-                Image(
-                    painter = painterResource(id = R.drawable.baseline_chat_24),
-                    contentDescription = null, modifier = Modifier.size(30.dp)
-                )
-            }
-            Button(
-                onClick = {
-                    navController.navigate("schedule")
-                },
-                shape = RoundedCornerShape(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xff75D1FF),
-                ), modifier = Modifier.padding(8.dp)
-            ) {
-                // Text(text = "스케쥴")
-                Image(
-                    painter = painterResource(id = R.drawable.baseline_calendar_month_24),
-                    contentDescription = null, modifier = Modifier.size(30.dp)
-                )
-            }
-            Button(
-                onClick = {
-                    navController.navigate("personal")
-                },
-                shape = RoundedCornerShape(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xff75D1FF),
-                ), modifier = Modifier.padding(8.dp)
-            ) {
-                //Text(text = "개인정보")
-                Image(
-                    painter = painterResource(id = R.drawable.baseline_person_24),
-                    contentDescription = null, modifier = Modifier.size(30.dp)
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.baseline_home_24),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(50.dp)
+                    .padding(8.dp)
+                    .weight(1f)
+                    .clickable { navController.navigate("home") }
+            )
+            Image(
+                painter = painterResource(id = R.drawable.baseline_chat_24),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(50.dp)
+                    .padding(8.dp)
+                    .weight(1f)
+                    .clickable { navController.navigate("dm") }
+            )
+            Image(
+                painter = painterResource(id = R.drawable.baseline_fastfood_24),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(50.dp)
+                    .padding(8.dp)
+                    .weight(1f)
+                    .clickable { navController.navigate("lunchMenuScreenRoute") }
+            )
+            Image(
+                painter = painterResource(id = R.drawable.baseline_calendar_month_24),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(50.dp)
+                    .padding(8.dp)
+                    .weight(1f)
+                    .clickable { navController.navigate("schedule") }
+            )
+            Image(
+                painter = painterResource(id = R.drawable.baseline_person_24),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(50.dp)
+                    .padding(8.dp)
+                    .weight(1f)
+                    .clickable { navController.navigate("personal") }
+            )
         }
     }
 }
@@ -1572,7 +1703,7 @@ data class ChatMessage(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, chatName: String) {
     val context = LocalContext.current
-    var chatmessage by remember { mutableStateOf("") }
+    var chatMessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
     val user: FirebaseUser? = mAuth.currentUser
 
@@ -1586,11 +1717,12 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             uri?.let {
-                uploadChatImage(chatmessage, chatName, it, mAuth,
+                uploadChatImage(chatMessage, chatName, it, mAuth,
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
             }
+            chatMessage = ""
         }
     )
     loadChatMessages(chatName) { messages ->
@@ -1599,7 +1731,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
     Scaffold(topBar = {
         TopAppBar(
             title = {
-                Text(text = "채팅방", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
+                Text(text = chatName, color = Color.White, fontWeight = FontWeight.Bold)
             },
             navigationIcon = {
                 IconButton(
@@ -1621,7 +1753,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                 }
             },
             //탑바 색바꾸기
-//            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
+            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
         )
     }, bottomBar = {
         BottomAppBar(
@@ -1638,15 +1770,17 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                     modifier = Modifier
                         .clickable {
                             launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            Toast
+                                .makeText(context, "글을 쓰고 이미지를 고르세요", Toast.LENGTH_SHORT)
+                                .show()
                         }
                         .padding(10.dp)
                 )
                 TextField(
-                    value = chatmessage,
-                    onValueChange = { chatmessage = it },
+                    value = chatMessage,
+                    onValueChange = { chatMessage = it },
                     modifier = Modifier
-                        .weight(1f) // 여기서 비율을 조정
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .weight(1f)
                         .background(Color.White),
                     colors = TextFieldDefaults.textFieldColors(
                         containerColor = Color.Transparent,
@@ -1658,18 +1792,18 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                     modifier = Modifier
                         .padding(10.dp)
                         .clickable {
-                            if (chatmessage.isNotEmpty()) {
+                            if (chatMessage.isNotEmpty()) {
                                 val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                                 val newChatMessage =
                                     ChatMessage(
-                                        message = chatmessage,
+                                        message = chatMessage,
                                         userId = user?.uid,
                                         userName = user?.displayName,
                                         uploadDate = currentDate,
                                         profileString = user?.photoUrl.toString()
                                     )
                                 saveChatMessage(newChatMessage, chatName)
-                                chatmessage = ""
+                                chatMessage = ""
                             }
                         })
             }
@@ -1684,7 +1818,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
             items(chatMessages.reversed()) { message ->
                 val isCurrentUserMessage = user?.uid == message.userId
                 val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
+                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xffF3F3F3)
                 val textColor = if (isCurrentUserMessage) Color.White else Color.Black
 
                 Column(
@@ -1705,6 +1839,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
+                                    .align(Top)
                             )
                         }
                         Column {
@@ -1717,10 +1852,12 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                             }
                             Row {
                                 if (isCurrentUserMessage) {
+                                    Spacer(modifier = Modifier.size(2.dp))
                                     Text(
                                         text = message.uploadDate ?: "",
                                         fontSize = 8.sp,
-                                        color = Color.LightGray
+                                        color = Color.LightGray,
+                                        modifier = Modifier.align(Bottom)
                                     )
                                 }
                                 Column {
@@ -1763,8 +1900,10 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                                     Text(
                                         text = message.uploadDate ?: "",
                                         fontSize = 8.sp,
-                                        color = Color.LightGray
+                                        color = Color.LightGray,
+                                        modifier = Modifier.align(Bottom)
                                     )
+                                    Spacer(modifier = Modifier.size(2.dp))
                                 }
                             }
                         }
@@ -2037,7 +2176,8 @@ fun BoardViewScreen(navController: NavController, postName: String, makeBoardRou
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = postTitle) },
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF)),
+                title = { Text(text = postTitle, color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = {
                         navController.navigate("home")
@@ -2099,16 +2239,18 @@ fun EditPostDialog(
     ) {
         Column(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(16.dp)
-                .background(MaterialTheme.colorScheme.background)
-                .fillMaxWidth(),
+                .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(16.dp)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 text = "수정",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontSize = 24.sp
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -2116,10 +2258,11 @@ fun EditPostDialog(
             BasicTextField(
                 value = editedTitle.text,
                 onValueChange = { editedTitle = TextFieldValue(it) },
-                textStyle = MaterialTheme.typography.bodySmall,
+                textStyle = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
+                    .padding(16.dp)
+                    .background(Color.White)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -2127,10 +2270,11 @@ fun EditPostDialog(
             BasicTextField(
                 value = editedContent.text,
                 onValueChange = { editedContent = TextFieldValue(it) },
-                textStyle = MaterialTheme.typography.bodyLarge,
+                textStyle = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
+                    .padding(16.dp)
+                    .background(Color.White)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -2141,23 +2285,28 @@ fun EditPostDialog(
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Button(
-                    onClick = {
-                        val updatedPost = post.copy(
-                            title = editedTitle.text,
-                            content = editedContent.text
-                        )
-                        onEditCompleted(updatedPost)
-                    }
-                ) {
-                    Text("저장")
-                }
-
-                Button(
-                    onClick = onCancel
-                ) {
-                    Text("취소")
-                }
+                Text(
+                    text = "저장",
+                    modifier = Modifier
+                        .clickable {
+                            val updatedPost = post.copy(
+                                title = editedTitle.text,
+                                content = editedContent.text
+                            )
+                            onEditCompleted(updatedPost)
+                        }
+                        .weight(1f)
+                        .padding(8.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(text = "취소", modifier = Modifier
+                    .clickable { onCancel() }
+                    .weight(1f)
+                    .padding(8.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -2172,7 +2321,11 @@ fun PostCard(
     var showOptions by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xffF3F3F3)),
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
