@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -105,6 +104,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -258,7 +259,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                 //작업하시는 화면으로 startDestination해주시면 됩니다
-                NavHost(navController = navController, startDestination = "home") {
+                NavHost(navController = navController, startDestination = startDestination) {
                     composable("home") {
                         HomeScreen(navController)
                     }
@@ -279,30 +280,23 @@ class MainActivity : ComponentActivity() {
                             onPickImage = { }
                         )
                     }
-                    composable("boardview") {
-                        BoardViewScreen(navController)
-                    }
-                    composable("workspace") {
-                        WorkSpaceChattingScreen(navController, mAuth)
-                    }
-                    composable("teamproject") {
-                        TeamChattingScreen(navController, mAuth)
-                    }
-                    composable("playground") {
-                        PlayGroundChattingScreen(navController, mAuth)
-                    }
+                    BoardViewsScreens(navController, mAuth)
+                    ChattingScreens(navController, mAuth)
                     composable("login") {
                         LoginScreen(
                             signInClicked = {
                                 launcher.launch(signInIntent)
                             })
                     }
-                    composable("makeboard") {
-                        MakeBoardScreen(navController, mAuth)
+                    composable("homeScreenRoute") {
+                        HomeScreen(navController)
                     }
-                    composable("homeScreenRoute") { HomeScreen(navController) }
-                    composable("lunchMenuScreenRoute") { LunchMenuScreen(navController) }
-                    composable("details") { DetailsScreen(navController) }
+                    composable("lunchMenuScreenRoute") {
+                        LunchMenuScreen(navController)
+                    }
+                    composable("details") {
+                        DetailsScreen(navController)
+                    }
                     composable("next_destination/{selectedMenu}") { backStackEntry ->
                         val selectedMenu = backStackEntry.arguments?.getString("selectedMenu") ?: ""
                         NextScreen(navController, selectedMenu)
@@ -349,7 +343,38 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun NavGraphBuilder.ChattingScreens(navController: NavHostController, mAuth: FirebaseAuth) {
+    composable("workspace") {
+        ChattingScreen(navController, mAuth, "workspace")
+    }
+    composable("teamproject") {
+        ChattingScreen(navController, mAuth, "teamproject")
+    }
+    composable("playground") {
+        ChattingScreen(navController, mAuth, "playground")
+    }
+}
 
+private fun NavGraphBuilder.BoardViewsScreens(navController: NavHostController, mAuth: FirebaseAuth) {
+    composable("notice") {
+        BoardViewScreen(navController, "notice", "makeNoticeBoard", "공지사항")
+    }
+    composable("makeNoticeBoard") {
+        MakeBoardScreen(navController, mAuth, "notice")
+    }
+    composable("my") {
+        BoardViewScreen(navController, "my", "makeMyBoard", "내게식판")
+    }
+    composable("makeMyBoard") {
+        MakeBoardScreen(navController, mAuth, "my")
+    }
+    composable("idontknow") {
+        BoardViewScreen(navController, "idontknow", "makeIDontKnowBoard", "여기다뭘해야될까요")
+    }
+    composable("makeIDontKnowBoard") {
+        MakeBoardScreen(navController, mAuth, "idontknow")
+    }
+}
 @Composable
 fun GoogleSignInButton(
     signInClicked: () -> Unit
@@ -398,7 +423,7 @@ fun HomeScreen(navController: NavController) {
                                 modifier = Modifier.size(35.dp)
                             )
                         }
-                        IconButton(onClick = { navController.navigate("newboard") }) {
+                        IconButton(onClick = {  }) {
                             Image(
                                 painter = painterResource(id = R.drawable.baseline_post_add_24),
                                 contentDescription = null,
@@ -421,12 +446,22 @@ fun HomeScreen(navController: NavController) {
             Column {
                 //게시판 색바꾸기
                 HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
-                HomeBoardTitle(icon = R.drawable.baseline_announcement_24, boardtitle = "공지 게시판", onClicked = {navController.navigate("boardview")})
-                HomeBoardTitle(icon = R.drawable.baseline_food_bank_24, boardtitle = "점심 게시판", onClicked = {navController.navigate("lunchMenuScreenRoute")})
+                HomeBoardTitle(
+                    icon = R.drawable.baseline_announcement_24,
+                    boardtitle = "공지 게시판",
+                    onClicked = { navController.navigate("notice") })
+                HomeBoardTitle(
+                    icon = R.drawable.baseline_food_bank_24,
+                    boardtitle = "점심 게시판",
+                    onClicked = { navController.navigate("lunchMenuScreenRoute") })
                 HomeBoardTitle(
                     icon = R.drawable.baseline_insert_drive_file_24,
-                    boardtitle = "내 게시판", onClicked = {}
-                )
+                    boardtitle = "내 게시판",
+                    onClicked = { navController.navigate("my") })
+                HomeBoardTitle(
+                    icon = R.drawable.baseline_insert_drive_file_24,
+                    boardtitle = "여긴 뭘로 할까요",
+                    onClicked = { navController.navigate("idontknow") })
             }
         }
     }
@@ -446,12 +481,14 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
             .background(Color.White)
             .clickable { onClicked() }
             .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
-            .size(width= 178.dp, height = 128.dp),
+            .size(width = 178.dp, height = 128.dp),
     ) {
-        Column(verticalArrangement = Arrangement.Center,
+        Column(
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start,
             modifier = Modifier
-                .padding(start= 14.dp, top= 8.dp)) {
+                .padding(start = 14.dp, top = 8.dp)
+        ) {
             Image(
                 painter = painterResource(id = icon),
                 contentDescription = null,
@@ -1581,7 +1618,7 @@ data class ChatMessage(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
+private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, chatName: String) {
     val context = LocalContext.current
     var chatmessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
@@ -1597,14 +1634,14 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             uri?.let {
-                uploadToTeamChatImage(it, mAuth,
+                uploadChatImage(chatName, it, mAuth,
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
             }
         }
     )
-    loadTeamChatMessages { messages ->
+    loadChatMessages(chatName) { messages ->
         chatMessages = messages
     }
     Scaffold(topBar = {
@@ -1679,7 +1716,7 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
                                         uploadDate = currentDate,
                                         profileString = user?.photoUrl.toString()
                                     )
-                                saveTeamChatMessage(newChatMessage)
+                                saveChatMessage(newChatMessage, chatName)
                                 chatmessage = ""
                             }
                         })
@@ -1803,18 +1840,18 @@ private fun TeamChattingScreen(navController: NavController, mAuth: FirebaseAuth
 }
 
 
-fun saveTeamChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("teamproject") // "chat"이라는 경로로 데이터를 저장
+fun saveChatMessage(chatMessage: ChatMessage, chatName: String) {
+    val database = Firebase.database
+    val chatRef = database.getReference("chattings").child(chatName) // "chat"이라는 경로로 데이터를 저장
     val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
 
     newMessageRef.setValue(chatMessage)
 }
 
 
-fun loadTeamChatMessages(listener: (List<ChatMessage>) -> Unit) {
+fun loadChatMessages(chatName: String, listener: (List<ChatMessage>) -> Unit) {
     val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("teamproject")
+    val chatRef = database.getReference("chattings").child(chatName)
 
     chatRef.addValueEventListener(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -1834,7 +1871,7 @@ fun loadTeamChatMessages(listener: (List<ChatMessage>) -> Unit) {
     })
 }
 
-fun uploadToTeamChatImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+fun uploadChatImage(chatName: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
     val storage = FirebaseStorage.getInstance()
     val storageRef = storage.reference
     val user = mAuth.currentUser
@@ -1853,574 +1890,7 @@ fun uploadToTeamChatImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (Strin
                     profileString = user?.photoUrl.toString(),
                     imageUrl = imageUrl // imageUrl 설정
                 )
-                saveTeamChatMessage(chatMessage)
-                onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
-            }
-        }
-        .addOnFailureListener {
-            // 업로드 실패 처리
-        }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun WorkSpaceChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
-    val context = LocalContext.current
-    var chatmessage by remember { mutableStateOf("") }
-    var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
-    val user: FirebaseUser? = mAuth.currentUser
-
-    val clipboardManager = LocalClipboardManager.current
-
-    var uploadedImageUrl by remember { mutableStateOf("") }
-    var isImageExpanded by remember { mutableStateOf(false) }
-    var expandedImageUri by remember { mutableStateOf("") }
-    var isModalVisible by remember { mutableStateOf(false) }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            uri?.let {
-                uploadToWorkChatImage(it, mAuth,
-                    onImageUploaded = { imageUrl ->
-                        uploadedImageUrl = imageUrl
-                    })
-            }
-        }
-    )
-    loadWorkChatMessages { messages ->
-        chatMessages = messages
-    }
-    Scaffold(topBar = {
-        TopAppBar(
-            title = {
-                Text(text = "채팅방", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        navController.navigate("dm")
-                    }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back button"
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                }
-            },
-            //탑바 색바꾸기
-//            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
-        )
-    }, bottomBar = {
-        BottomAppBar(
-            containerColor = Color.White
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "추가기능",
-                    modifier = Modifier
-                        .clickable {
-                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        }
-                        .padding(10.dp)
-                )
-                TextField(
-                    value = chatmessage,
-                    onValueChange = { chatmessage = it },
-                    modifier = Modifier
-                        .weight(1f) // 여기서 비율을 조정
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .background(Color.White),
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-                Icon(imageVector = Icons.Default.Send, contentDescription = "메세지 보내기버튼",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .clickable {
-                            if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                                val newChatMessage =
-                                    ChatMessage(
-                                        message = chatmessage,
-                                        userId = user?.uid,
-                                        userName = user?.displayName,
-                                        uploadDate = currentDate,
-                                        profileString = user?.photoUrl.toString()
-                                    )
-                                saveWorkChatMessage(newChatMessage)
-                                chatmessage = ""
-                            }
-                        })
-            }
-        }
-    }) { innerPadding ->
-        LazyColumn(
-            reverseLayout = true,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            items(chatMessages.reversed()) { message ->
-                val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
-                val textColor = if (isCurrentUserMessage) Color.White else Color.Black
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalAlignment = alignment
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (!isCurrentUserMessage) {
-                            val selectedUri = message.profileString?.let { Uri.parse(it) }
-                            AsyncImage(
-                                model = selectedUri,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                        Column {
-                            if (!isCurrentUserMessage) {
-                                Text(
-                                    text = message.userName ?: "",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Row {
-                                if (isCurrentUserMessage) {
-                                    Text(
-                                        text = message.uploadDate ?: "",
-                                        fontSize = 8.sp,
-                                        color = Color.LightGray
-                                    )
-                                }
-                                Column {
-                                    if (!message.imageUrl.isNullOrEmpty()) {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(message.imageUrl),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    isImageExpanded = !isImageExpanded
-                                                    if (isImageExpanded) {
-                                                        expandedImageUri = message.imageUrl
-                                                        isModalVisible = true  // 모달을 열도록 상태 변경
-                                                    }
-                                                }
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                                            .padding(8.dp)
-                                    ) {
-                                        Text(
-                                            text = message.message ?: "",
-                                            fontSize = 16.sp,
-                                            color = textColor,
-                                            modifier = Modifier.pointerInput(Unit) {
-                                                detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
-                                                    clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
-                                                })
-                                            }
-                                        )
-                                    }
-                                }
-                                if (!isCurrentUserMessage) {
-                                    Text(
-                                        text = message.uploadDate ?: "",
-                                        fontSize = 8.sp,
-                                        color = Color.LightGray
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (isModalVisible) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .clickable { isModalVisible = false }  // 모달 클릭 시 닫기
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(expandedImageUri),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { isModalVisible = false }  // 이미지 클릭 시 닫기
-            )
-        }
-    }
-}
-
-
-fun saveWorkChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("workspace") // "chat"이라는 경로로 데이터를 저장
-    val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
-
-    newMessageRef.setValue(chatMessage)
-}
-
-
-fun loadWorkChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("workspace")
-
-    chatRef.addValueEventListener(object : ValueEventListener {
-        override fun onDataChange(snapshot: DataSnapshot) {
-            val messages = mutableListOf<ChatMessage>()
-            for (childSnapshot in snapshot.children) {
-                val chatMessage = childSnapshot.getValue(ChatMessage::class.java)
-                chatMessage?.let {
-                    messages.add(it)
-                }
-            }
-            listener(messages)
-        }
-
-        override fun onCancelled(error: DatabaseError) {
-            // 에러 처리
-        }
-    })
-}
-
-fun uploadToWorkChatImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
-    val storage = FirebaseStorage.getInstance()
-    val storageRef = storage.reference
-    val user = mAuth.currentUser
-
-    val imageRef = storageRef.child("images/${uri.lastPathSegment}")
-    imageRef.putFile(uri)
-        .addOnSuccessListener { taskSnapshot ->
-            // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
-            taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
-                val imageUrl = downloadUri.toString()
-                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                val chatMessage = ChatMessage(
-                    userId = user?.uid,
-                    userName = user?.displayName,
-                    uploadDate = currentDate,
-                    profileString = user?.photoUrl.toString(),
-                    imageUrl = imageUrl // imageUrl 설정
-                )
-                saveWorkChatMessage(chatMessage)
-                onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
-            }
-        }
-        .addOnFailureListener {
-            // 업로드 실패 처리
-        }
-}
-
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun PlayGroundChattingScreen(navController: NavController, mAuth: FirebaseAuth) {
-    val context = LocalContext.current
-    var chatmessage by remember { mutableStateOf("") }
-    var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
-    val user: FirebaseUser? = mAuth.currentUser
-
-    val clipboardManager = LocalClipboardManager.current
-
-    var isImageExpanded by remember { mutableStateOf(false) }
-    var expandedImageUri by remember { mutableStateOf("") }
-    var isModalVisible by remember { mutableStateOf(false) }
-    var uploadedImageUrl by remember { mutableStateOf("") }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            uri?.let {
-                uploadToPlayChatImage(it, mAuth,
-                    onImageUploaded = { imageUrl ->
-                        uploadedImageUrl = imageUrl
-                    })
-            }
-        }
-    )
-    loadPlayChatMessages { messages ->
-        chatMessages = messages
-    }
-    Scaffold(topBar = {
-        TopAppBar(
-            title = {
-                Text(text = "채팅방", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        navController.navigate("dm")
-                    }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back button"
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                }
-            },
-            //탑바 색바꾸기
-//            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Gray)
-        )
-    }, bottomBar = {
-        BottomAppBar(
-            containerColor = Color.White
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "추가기능",
-                    modifier = Modifier
-                        .clickable {
-                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        }
-                        .padding(10.dp)
-                )
-                TextField(
-                    value = chatmessage,
-                    onValueChange = { chatmessage = it },
-                    modifier = Modifier
-                        .weight(1f) // 여기서 비율을 조정
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .background(Color.White),
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-                Icon(imageVector = Icons.Default.Send, contentDescription = "메세지 보내기버튼",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .clickable {
-                            if (chatmessage.isNotEmpty()) {
-                                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                                val newChatMessage =
-                                    ChatMessage(
-                                        message = chatmessage,
-                                        userId = user?.uid,
-                                        userName = user?.displayName,
-                                        uploadDate = currentDate,
-                                        profileString = user?.photoUrl.toString()
-                                    )
-                                savePlayChatMessage(newChatMessage)
-                                chatmessage = ""
-                            }
-                        })
-            }
-        }
-    }) { innerPadding ->
-        LazyColumn(
-            reverseLayout = true,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            items(chatMessages.reversed()) { message ->
-                val isCurrentUserMessage = user?.uid == message.userId
-                val alignment = if (isCurrentUserMessage) Alignment.End else Alignment.Start
-                val backgroundColor = if (isCurrentUserMessage) Color(0xFF070F14) else Color(0xFFFCE9F0)
-                val textColor = if (isCurrentUserMessage) Color.White else Color.Black
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalAlignment = alignment
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (!isCurrentUserMessage) {
-                            val selectedUri = message.profileString?.let { Uri.parse(it) }
-                            AsyncImage(
-                                model = selectedUri,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                        Column {
-                            if (!isCurrentUserMessage) {
-                                Text(
-                                    text = message.userName ?: "",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Row {
-                                if (isCurrentUserMessage) {
-                                    Text(
-                                        text = message.uploadDate ?: "",
-                                        fontSize = 8.sp,
-                                        color = Color.LightGray
-                                    )
-                                }
-                                Column {
-                                    if (!message.imageUrl.isNullOrEmpty()) {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(message.imageUrl),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    isImageExpanded = !isImageExpanded
-                                                    if (isImageExpanded) {
-                                                        expandedImageUri = message.imageUrl
-                                                        isModalVisible = true  // 모달을 열도록 상태 변경
-                                                    }
-                                                }
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                                            .padding(8.dp)
-                                    ) {
-                                        Text(
-                                            text = message.message ?: "",
-                                            fontSize = 16.sp,
-                                            color = textColor,
-                                            modifier = Modifier.pointerInput(Unit) {
-                                                detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
-                                                    clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
-                                                })
-                                            }
-                                        )
-                                    }
-                                }
-                                if (!isCurrentUserMessage) {
-                                    Text(
-                                        text = message.uploadDate ?: "",
-                                        fontSize = 8.sp,
-                                        color = Color.LightGray
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (isModalVisible) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .clickable { isModalVisible = false }  // 모달 클릭 시 닫기
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(expandedImageUri),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { isModalVisible = false }  // 이미지 클릭 시 닫기
-            )
-        }
-    }
-}
-
-
-fun savePlayChatMessage(chatMessage: ChatMessage) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("playground") // "chat"이라는 경로로 데이터를 저장
-    val newMessageRef = chatRef.push() // 새로운 메시지를 추가하기 위한 참조
-
-    newMessageRef.setValue(chatMessage)
-}
-
-
-fun loadPlayChatMessages(listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
-    val chatRef = database.getReference("chattings").child("playground")
-
-    chatRef.addValueEventListener(object : ValueEventListener {
-        override fun onDataChange(snapshot: DataSnapshot) {
-            val messages = mutableListOf<ChatMessage>()
-            for (childSnapshot in snapshot.children) {
-                val chatMessage = childSnapshot.getValue(ChatMessage::class.java)
-                chatMessage?.let {
-                    messages.add(it)
-                }
-            }
-            listener(messages)
-        }
-
-        override fun onCancelled(error: DatabaseError) {
-            // 에러 처리
-        }
-    })
-}
-
-fun uploadToPlayChatImage(uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
-    val storage = FirebaseStorage.getInstance()
-    val storageRef = storage.reference
-    val user = mAuth.currentUser
-
-    val imageRef = storageRef.child("images/${uri.lastPathSegment}")
-    imageRef.putFile(uri)
-        .addOnSuccessListener { taskSnapshot ->
-            // 업로드 성공 후 다운로드 URL을 가져와 채팅 메시지에 저장
-            taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
-                val imageUrl = downloadUri.toString()
-                val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                val chatMessage = ChatMessage(
-                    userId = user?.uid,
-                    userName = user?.displayName,
-                    uploadDate = currentDate,
-                    profileString = user?.photoUrl.toString(),
-                    imageUrl = imageUrl // imageUrl 설정
-                )
-                savePlayChatMessage(chatMessage)
+                saveChatMessage(chatMessage, chatName)
                 onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
             }
         }
@@ -2441,7 +1911,7 @@ data class Post(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
+fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth, postName: String) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
     var title by remember { mutableStateOf("") }
@@ -2451,7 +1921,7 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
     var uploadedImageUrl by remember { mutableStateOf("") }
 
 
-    loadPosts { posts ->
+    loadPosts(postName) { posts ->
         postList = posts
     }
 
@@ -2459,11 +1929,11 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             uri?.let {
-                uploadPostImage(title, content, it, mAuth,
+                uploadPostImage(title, content, postName,it, mAuth,
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
-                navController.navigate("boardview")
+                navController.navigate(postName)
             }
             title = ""
             content = ""
@@ -2493,7 +1963,7 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate("boardview")
+                        navController.navigate(postName)
                     }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
@@ -2521,12 +1991,12 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
                                     content = content,
                                     profile = user?.photoUrl.toString()
                                 )
-                                savePost(newPost)
+                                savePost(newPost, postName)
                                 // 게시 버튼 클릭 후 입력 필드 초기화
                             }
                             title = ""
                             content = ""
-                            navController.navigate("boardview")
+                            navController.navigate(postName)
                         },
                         enabled = canPost()
                     ) {
@@ -2561,11 +2031,11 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController) {
+fun BoardViewScreen(navController: NavController,postName: String, makeBoardRoute: String, postTitle: String) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
 
-    loadPosts { posts ->
+    loadPosts(postName) { posts ->
         postList = posts
     }
 
@@ -2579,7 +2049,7 @@ fun BoardViewScreen(navController: NavController) {
                 post = post,
                 onEditCompleted = { updatedPost ->
                     val database = Firebase.database
-                    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                    val postRef = database.getReference("Posts").child(postName)
                     postRef.child("${post.key}").setValue(updatedPost)
                     editedPost = null
                     showDialog = false
@@ -2600,7 +2070,7 @@ fun BoardViewScreen(navController: NavController) {
     ) {
         IconButton(
             onClick = {
-                navController.navigate("makeboard")
+                navController.navigate(makeBoardRoute)
             },
         ) {
             Icon(
@@ -2614,7 +2084,7 @@ fun BoardViewScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "공지사항") },
+                title = { Text(text = postTitle) },
                 navigationIcon = {
                     IconButton(onClick = {
                         navController.navigate("home")
@@ -2628,7 +2098,7 @@ fun BoardViewScreen(navController: NavController) {
                 actions = {
                     IconButton(
                         onClick = {
-                            navController.navigate("makeboard")
+                            navController.navigate(makeBoardRoute)
                         },
                     ) {
                         Icon(
@@ -2648,6 +2118,7 @@ fun BoardViewScreen(navController: NavController) {
         ) {
             items(postList.reversed()) { post ->
                 PostCard(
+                    postName,
                     post,
                     onEditClick = {
                         editedPost = post
@@ -2741,6 +2212,7 @@ fun EditPostDialog(
 
 @Composable
 fun PostCard(
+    postName: String,
     post: Post,
     onEditClick: () -> Unit,
 ) {
@@ -2781,7 +2253,7 @@ fun PostCard(
                             TextButton(
                                 onClick = {
                                     val database = Firebase.database
-                                    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
+                                    val postRef = database.getReference("Posts").child(postName)
                                     postRef.child("${post.key}").setValue(null)
                                 }
                             ) {
@@ -2862,18 +2334,18 @@ fun PostCard(
 }
 
 
-fun savePost(post: Post) {
+fun savePost(post: Post, postName: String) {
     val database = Firebase.database
-    val postRef = database.getReference("Posts") // "chat"이라는 경로로 데이터를 저장
-    val newPostRef = postRef.push() // 새로운 메시지를 추가하기 위한 참조
+    val postRef = database.getReference("Posts").child(postName)
+    val newPostRef = postRef.push()
 
     newPostRef.setValue(post)
 }
 
 
-fun loadPosts(onDataChange: (List<Post>) -> Unit) {
+fun loadPosts(postName: String, onDataChange: (List<Post>) -> Unit) {
     val database = Firebase.database
-    val postRef = database.getReference("Posts")
+    val postRef = database.getReference("Posts").child(postName)
 
     postRef.addValueEventListener(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -2894,7 +2366,7 @@ fun loadPosts(onDataChange: (List<Post>) -> Unit) {
     })
 }
 
-fun uploadPostImage(title: String, content: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+fun uploadPostImage(title: String, content: String, postName: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
     val storage = FirebaseStorage.getInstance()
     val storageRef = storage.reference
 
@@ -2915,7 +2387,7 @@ fun uploadPostImage(title: String, content: String, uri: Uri, mAuth: FirebaseAut
                     profile = user?.photoUrl.toString(),
                     imageUrl = imageUrl
                 )
-                savePost(newPost)
+                savePost(newPost, postName)
                 onImageUploaded(imageUrl) // 이미지 업로드 후 콜백 호출
             }
         }
