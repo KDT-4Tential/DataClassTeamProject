@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -561,7 +562,7 @@ fun TimerScreen(navController: NavController) {
             TopAppBar(
                 title = { Text(text = "Timer", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigate("home") }) {
                         Icon(painter = painterResource(id = R.drawable.arrow_back), contentDescription = null)
                     }
                 },
@@ -653,7 +654,6 @@ fun TimerScreen(navController: NavController) {
                 ) {
                     Text(text = "리셋")
                 }
-
             }
         }
     )
@@ -1102,7 +1102,7 @@ fun NextScreen(navController: NavController, selectedMenu: String) {
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
-                        onClick = { navController.navigate("home") },
+                        onClick = { navController.navigate("lunchMenuScreenRoute") },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xff75D1FF),
@@ -1555,7 +1555,6 @@ fun PersonalInfoScreen(
                 .padding(innerPadding),
             contentAlignment = Alignment.CenterStart
         ) {
-
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1568,31 +1567,22 @@ fun PersonalInfoScreen(
                         .size(80.dp)
                         .clip(CircleShape)
                 )
-
-
                 Spacer(modifier = Modifier.height(16.dp))
-
                 OutlinedTextField(
                     value = currentUser?.displayName ?: "",
                     onValueChange = {},
                     label = { Text("이름") },
                     enabled = false
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = currentUser?.email ?: "",
                     onValueChange = {},
                     label = { Text("이메일") },
                     enabled = false
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 // 2. 상태 설정을 위한 OutlinedTextField와 DropdownMenu 추가
-
-
                 OutlinedTextField(
                     value = selectedStatus,
                     onValueChange = { /* 여기서는 값 변경을 허용하지 않음 */ },
@@ -1608,7 +1598,6 @@ fun PersonalInfoScreen(
                     enabled = false,
                     modifier = Modifier.focusable(enabled = false)
                 )
-
                 DropdownMenu(
                     expanded = showDropdown,
                     onDismissRequest = { showDropdown = false }
@@ -1627,10 +1616,7 @@ fun PersonalInfoScreen(
                         )
                     }
                 }
-
-
                 Spacer(modifier = Modifier.height(16.dp))
-
                 Box(modifier = Modifier
                     .clickable { onClicked() }
                     .background(color = Color(0xff75d1ff), shape = RoundedCornerShape(8.dp))
@@ -1678,7 +1664,6 @@ fun getUserStatusFromFirestore(userId: String, onStatusFetched: (String) -> Unit
 private fun MyTopBar(topBarTitle: String) {
     TopAppBar(
         title = { Text(text = topBarTitle, color = Color.White, fontWeight = FontWeight.Bold) },
-        //탑바 색바꾸기
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
     )
 }
@@ -1784,7 +1769,11 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
     Scaffold(topBar = {
         TopAppBar(
             title = {
-                Text(text = chatName, color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = chatName,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             },
             navigationIcon = {
                 IconButton(
@@ -1937,20 +1926,23 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                                     Box(
                                         modifier = Modifier
                                             .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-//                                            .width(200.dp)
                                             .padding(8.dp)
                                     ) {
                                         Text(
                                             text = message.message ?: "",
                                             fontSize = 16.sp,
                                             color = textColor,
-                                            modifier = Modifier.pointerInput(Unit) {
-                                                detectTapGestures(onLongPress = {
-                                                    val annotatedString = AnnotatedString(message.message ?: "")
-                                                    clipboardManager.setText(annotatedString)
-                                                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
-                                                })
-                                            }
+                                            modifier = Modifier
+                                                .widthIn(max = 200.dp)
+                                                .pointerInput(Unit) {
+                                                    detectTapGestures(onLongPress = {
+                                                        val annotatedString = AnnotatedString(message.message ?: "")
+                                                        clipboardManager.setText(annotatedString)
+                                                        Toast
+                                                            .makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT)
+                                                            .show()
+                                                    })
+                                                }
                                         )
                                     }
                                 }
@@ -1999,7 +1991,7 @@ fun saveChatMessage(chatMessage: ChatMessage, chatName: String) {
 
 
 fun loadChatMessages(chatName: String, listener: (List<ChatMessage>) -> Unit) {
-    val database = getInstance("https://dataclass-27aac-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    val database = Firebase.database
     val chatRef = database.getReference("chattings").child(chatName)
 
     chatRef.addValueEventListener(object : ValueEventListener {
@@ -2265,7 +2257,6 @@ fun BoardViewScreen(navController: NavController, postName: String, makeBoardRou
             }
         }
     }
-
 }
 
 @Composable
@@ -2288,16 +2279,13 @@ fun EditPostDialog(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "수정",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             BasicTextField(
                 value = editedTitle.text,
                 onValueChange = { editedTitle = TextFieldValue(it) },
@@ -2308,9 +2296,7 @@ fun EditPostDialog(
                     .background(Color.White)
                     .size(40.dp)
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             BasicTextField(
                 value = editedContent.text,
                 onValueChange = { editedContent = TextFieldValue(it) },
@@ -2320,9 +2306,7 @@ fun EditPostDialog(
                     .padding(16.dp)
                     .background(Color.White)
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2411,10 +2395,8 @@ fun PostCard(
                             }
                         }
                     }
-
                 }
             }
-
             Text(
                 text = post.title,
                 style = TextStyle(
@@ -2428,9 +2410,7 @@ fun PostCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 프로필 사진 (여기에 실제 프로필 사진을 표시하려면 Image 또는 Coil 라이브러리를 사용할 수 있습니다.)
-
                 val selectedUri = post.profile.let { Uri.parse(it) }
-
                 AsyncImage(
                     model = selectedUri,
                     contentDescription = null,
@@ -2438,8 +2418,6 @@ fun PostCard(
                         .size(32.dp)
                         .clip(CircleShape)
                 )
-                // 실제 프로필 사진을 표시하는 코드를 여기에 추가
-
                 Spacer(modifier = Modifier.width(8.dp))
 
                 // 사용자명
@@ -2454,7 +2432,6 @@ fun PostCard(
                 fontSize = 14.sp,
                 color = Color.Gray
             )
-
             if (!post.imageUrl.isNullOrEmpty()) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Image(
@@ -2467,18 +2444,12 @@ fun PostCard(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-
             Text(
                 text = post.content,
                 fontSize = 16.sp
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
-
         }
     }
 }
