@@ -277,7 +277,6 @@ class MainActivity : ComponentActivity() {
 
 private fun NavGraphBuilder.ChattingScreens(navController: NavHostController, mAuth: FirebaseAuth) {
     composable("workspace") {
-
         ChattingScreen(navController, mAuth, "workspace")
     }
     composable("teamproject") {
@@ -285,6 +284,18 @@ private fun NavGraphBuilder.ChattingScreens(navController: NavHostController, mA
     }
     composable("playground") {
         ChattingScreen(navController, mAuth, "playground")
+    }
+    composable("Data Mining Chat") {
+        ChattingScreen(navController, mAuth, "데이터 마이닝 조별과제 채팅방")
+    }
+    composable("AI System Architecture Chat") {
+        ChattingScreen(navController, mAuth, "인공지능 조별과제 채팅방")
+    }
+    composable("Object Oriented Programming Chat") {
+        ChattingScreen(navController, mAuth, "객체지향 프로그래밍 조별과제 채팅방")
+    }
+    composable("Computer Security Chat") {
+        ChattingScreen(navController, mAuth, "컴퓨터 보안 채팅방")
     }
 }
 
@@ -375,13 +386,13 @@ fun HomeScreen(navController: NavController) {
                                 modifier = Modifier.size(35.dp)
                             )
                         }
-                        IconButton(onClick = { }) {
-                            Image(
-                                painter = painterResource(id = R.drawable.baseline_post_add_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(35.dp)
-                            )
-                        }
+//                        IconButton(onClick = { }) {
+//                            Image(
+//                                painter = painterResource(id = R.drawable.baseline_post_add_24),
+//                                contentDescription = null,
+//                                modifier = Modifier.size(35.dp)
+//                            )
+//                        }
                     }
                 }
             )
@@ -397,40 +408,40 @@ fun HomeScreen(navController: NavController) {
         ) {
             LazyColumn {
                 item {
-                    HomeTitle(categorytitle = "Notice Board", fontFamily = nanumbarngothic)
+                    HomeTitle(categorytitle = "게시판", fontFamily = nanumbarngothic)
                     Divider()
                     Row {
                         HomeBoardTitle(
                             icon = R.drawable.baseline_announcement_24,
-                            boardtitle = "Notice",
+                            boardtitle = "공지사항",
                             onClicked = { navController.navigate("notice") })
                     }
-                    HomeTitle(categorytitle = "Assignment Progress", fontFamily = nanumbarngothic)
+                    HomeTitle(categorytitle = "과제 진행상황 공유", fontFamily = nanumbarngothic)
                     Divider()
                     Row {
                         HomeBoardTitle(
                             icon = R.drawable.baseline_insert_drive_file_24,
-                            boardtitle = "Data Mining",
+                            boardtitle = "데이터마이닝",
                             onClicked = { navController.navigate("Data Mining") })
                         HomeBoardTitle(
                             icon = R.drawable.baseline_insert_drive_file_24,
-                            boardtitle = "AI System Architecture",
+                            boardtitle = "인공지능 시스템구조",
                             onClicked = { navController.navigate("AI System Architecture") })
                     }
                     Row {
                         HomeBoardTitle(
                             icon = R.drawable.baseline_insert_drive_file_24,
-                            boardtitle = "Computer Graphics",
+                            boardtitle = "컴퓨터 그래픽스",
                             onClicked = { navController.navigate("Computer Graphics") })
                         HomeBoardTitle(
                             icon = R.drawable.baseline_insert_drive_file_24,
-                            boardtitle = "Object Oriented Programming",
+                            boardtitle = "객체지향 프로그래밍",
                             onClicked = { navController.navigate("Object Oriented Programming") })
                     }
                     Row {
                         HomeBoardTitle(
                             icon = R.drawable.baseline_insert_drive_file_24,
-                            boardtitle = "Computer Security",
+                            boardtitle = "컴퓨터 보안",
                             onClicked = { navController.navigate("Computer Security") })
                     }
                     Divider()
@@ -549,13 +560,17 @@ fun TimerScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "타이머", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(text = "Timer", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(painter = painterResource(id = R.drawable.arrow_back), contentDescription = null)
                     }
                 },
-                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = Color(0xff75D1FF),
+                    actionIconContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         },
         content = { innerPadding ->
@@ -1108,14 +1123,38 @@ fun DmScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             Column {
-                ChatItem("Work Space", R.drawable.baseline_3p_24) {
-                    navController.navigate("workspace")
+                ChatItem("컴퓨터보안 조별과제 채팅방", R.drawable.baseline_3p_24) {
+                    navController.navigate("Computer Security Chat")
                 }
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp), color = Color.Gray
-                ) // ChatItem 아래에 선 추가
+                )
+                ChatItem("데이터 마이닝 조별과제 채팅방", R.drawable.baseline_3p_24) {
+                    navController.navigate("Data Mining Chat")
+                }
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp), color = Color.Gray
+                )
+                ChatItem("인공지능 조별과제 채팅방", R.drawable.baseline_3p_24) {
+                    navController.navigate("AI System Architecture Chat")
+                }
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp), color = Color.Gray
+                )
+                ChatItem("객체지향 프로그래밍 조별과제 채팅방", R.drawable.baseline_3p_24) {
+                    navController.navigate("Object Oriented Programming Chat")
+                }
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp), color = Color.Gray
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 ChatItem("Team Project", R.drawable.baseline_diversity_3_24) {
                     navController.navigate("teamproject")
@@ -1124,16 +1163,16 @@ fun DmScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp), color = Color.Gray
-                ) // ChatItem 아래에 선 추가
+                )
                 Spacer(modifier = Modifier.height(8.dp))
-                ChatItem("Play Ground", R.drawable.baseline_interests_24) {
+                ChatItem("Playground", R.drawable.baseline_interests_24) {
                     navController.navigate("playground")
                 }
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp), color = Color.Gray
-                ) // ChatItem 아래에 선 추가
+                )
             }
         }
     }
@@ -1167,7 +1206,7 @@ fun ScheduleScreen(
 ) {
     Scaffold(
         topBar = {
-            MyTopBar("스케줄")
+            MyTopBar("Schedule")
         },
         bottomBar = {
             MyBottomBar(navController)
@@ -1493,7 +1532,7 @@ fun PersonalInfoScreen(
     val statusOptions = listOf("미팅 중", "출퇴근 중", "병가", "휴가", "업무 중")
     var showDropdown by remember { mutableStateOf(false) }
     Scaffold(
-        topBar = { MyTopBar("개인정보") }, // MyTopBar는 @Composable 함수여야 합니다.
+        topBar = { MyTopBar("Profile") }, // MyTopBar는 @Composable 함수여야 합니다.
         bottomBar = { MyBottomBar(navController) } // MyBottomBara도 @Composable 함수여야 합니다.
     ) { innerPadding ->
         Box(
@@ -1522,7 +1561,7 @@ fun PersonalInfoScreen(
                 OutlinedTextField(
                     value = currentUser?.displayName ?: "",
                     onValueChange = {},
-                    label = { Text("Name") },
+                    label = { Text("이름") },
                     enabled = false
                 )
 
@@ -1531,7 +1570,7 @@ fun PersonalInfoScreen(
                 OutlinedTextField(
                     value = currentUser?.email ?: "",
                     onValueChange = {},
-                    label = { Text("E-mail") },
+                    label = { Text("이메일") },
                     enabled = false
                 )
 
@@ -1736,10 +1775,10 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
             navigationIcon = {
                 IconButton(
                     onClick = {
-                        navController.navigate("dm")
+                        navController.popBackStack()
                     }) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        painter = painterResource(id = R.drawable.arrow_back),
                         contentDescription = "Back button"
                     )
                 }
@@ -1753,7 +1792,11 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                 }
             },
             //탑바 색바꾸기
-            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
+            colors = TopAppBarDefaults.smallTopAppBarColors(
+                containerColor = Color(0xff75D1FF),
+                actionIconContentColor = Color.White,
+                navigationIconContentColor = Color.White
+            )
         )
     }, bottomBar = {
         BottomAppBar(
@@ -2055,10 +2098,10 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth, postName:
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate(postName)
+                        navController.popBackStack()
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            painter = painterResource(id = R.drawable.arrow_back),
                             contentDescription = "뒤로 가기"
                         )
                     }
@@ -2153,37 +2196,21 @@ fun BoardViewScreen(navController: NavController, postName: String, makeBoardRou
             )
         }
     }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        IconButton(
-            onClick = {
-                navController.navigate(makeBoardRoute)
-            },
-        ) {
-            Icon(
-                imageVector = Icons.Default.Create, // 원하는 아이콘을 선택하세요.
-                contentDescription = "게시글 추가"
-            )
-        }
-    }
-
-
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF)),
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = Color(0xff75D1FF),
+                    actionIconContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
                 title = { Text(text = postTitle, color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate("home")
+                        navController.popBackStack()
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            painter = painterResource(id = R.drawable.arrow_back),
                             contentDescription = "뒤로 가기"
                         )
                     }
@@ -2195,8 +2222,9 @@ fun BoardViewScreen(navController: NavController, postName: String, makeBoardRou
                         },
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add, // 원하는 아이콘을 선택하세요.
-                            contentDescription = "게시글 추가"
+                            painter = painterResource(id = R.drawable.post_add), // 원하는 아이콘을 선택하세요.
+                            contentDescription = "게시글 추가",
+                            modifier = Modifier.size(30.dp)
                         )
                     }
                 }
