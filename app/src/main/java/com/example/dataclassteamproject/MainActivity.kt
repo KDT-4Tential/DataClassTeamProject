@@ -641,6 +641,19 @@ fun TimerScreen(navController: NavController) {
                         Text(text = "회의 끝")
                     }
                 }
+                Button(
+                    onClick = {
+                        navController.navigate("timer")
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xff75D1FF), // 원하는 색상으로 변경
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(text = "리셋")
+                }
+
             }
         }
     )
@@ -1924,6 +1937,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
                                     Box(
                                         modifier = Modifier
                                             .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+//                                            .width(200.dp)
                                             .padding(8.dp)
                                     ) {
                                         Text(
@@ -2292,6 +2306,7 @@ fun EditPostDialog(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .background(Color.White)
+                    .size(40.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
