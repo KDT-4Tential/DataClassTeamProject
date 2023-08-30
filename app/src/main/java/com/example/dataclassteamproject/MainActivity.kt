@@ -94,6 +94,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -365,7 +366,7 @@ fun HomeScreen(navController: NavController) {
         Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
         Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
     )
-    val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
+//    val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
 
     Scaffold(
         topBar = {
@@ -495,32 +496,32 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
     }
 }
 
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-fun NewBoardScreen() {
-    var name by remember { mutableStateOf("") }
-    val nanumbarngothic = FontFamily(
-        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-    )
-    Column {
-        TextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(text = "새로운 게시판 이름") },
-            placeholder = { Text(text = "") }
-        )
-        Button(onClick = {
-            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
-            val newBoardTitle = name
-            val newBoard = Pair(newBoardIcon, newBoardTitle)
-        }) {
-            Text(text = "생성")
-        }
-    }
-}
+//@Composable
+//@OptIn(ExperimentalMaterial3Api::class)
+//fun NewBoardScreen() {
+//    var name by remember { mutableStateOf("") }
+//    val nanumbarngothic = FontFamily(
+//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
+//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
+//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
+//    )
+//    Column {
+//        TextField(
+//            value = name,
+//            onValueChange = { name = it },
+//            label = { Text(text = "새로운 게시판 이름") },
+//            placeholder = { Text(text = "") }
+//        )
+//        Button(onClick = {
+//            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
+//            val newBoardTitle = name
+//            val newBoard = Pair(newBoardIcon, newBoardTitle)
+//        }) {
+//            Text(text = "생성")
+//        }
+//    }
+//}
 
 @Composable
 fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
@@ -549,7 +550,7 @@ fun LoginScreen(signInClicked: () -> Unit) {
 @Composable
 fun TimerScreen(navController: NavController) {
     var remainingSeconds by remember { mutableStateOf(30 * 60) }
-    var initialRemainingSeconds by remember { mutableStateOf(30 * 60) }
+    val initialRemainingSeconds by remember { mutableStateOf(30 * 60) }
     var isRunning by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
     var elapsedTimeMinutes by remember { mutableStateOf(0) }
@@ -671,11 +672,11 @@ fun startTimer(onTick: (Int) -> Unit) {
     }
 }
 
-fun resumeTimer() {
-    startTimer { updatedValue ->
-        currentSeconds = updatedValue
-    }
-}
+//fun resumeTimer() {
+//    startTimer { updatedValue ->
+//        currentSeconds = updatedValue
+//    }
+//}
 
 fun stopTimer() {
     timer?.cancel()
@@ -1244,7 +1245,7 @@ fun CalendarComposable(
     onPreviousMonthClick: () -> Unit,
     onNextMonthClick: () -> Unit
 ) {
-    var memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
+    val memoMap by remember { mutableStateOf(mutableMapOf<LocalDate, String>()) }
     var showDialog by remember { mutableStateOf(false) }
 
 
@@ -1311,7 +1312,7 @@ fun CalendarComposable(
             itemsIndexed(daysInMonth) { index, day ->
                 val date = selectedDate.withDayOfMonth(day)
                 val isSelected = date == selectedDate
-                var memo = memoMap[date] ?: ""
+                val memo = memoMap[date] ?: ""
 
                 val dayOfWeekIndex = date.dayOfWeek.value - 1
                 val isFirstInRow = dayOfWeekIndex == 6
@@ -1421,10 +1422,12 @@ fun CalendarDay(
                 text = memo,
                 color = Color.Black,
                 fontSize = 10.sp,   // 메모 글자 크기
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .background(Color.Cyan)
+                    .background(Color(0xffF3F3F3), shape = RoundedCornerShape(6.dp))
                     .padding(4.dp)
             )
         }
@@ -2205,7 +2208,7 @@ fun BoardViewScreen(navController: NavController, postName: String, makeBoardRou
                 title = { Text(text = postTitle, color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.popBackStack()
+                        navController.navigate("home")
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.arrow_back),
