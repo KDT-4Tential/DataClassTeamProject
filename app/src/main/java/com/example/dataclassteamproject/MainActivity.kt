@@ -367,8 +367,6 @@ fun HomeScreen(navController: NavController) {
         Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
         Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
     )
-//    val (boardTitles, setBoardTitles) = remember { mutableStateOf(listOf<Pair<Int, String>>()) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -386,13 +384,6 @@ fun HomeScreen(navController: NavController) {
                                 modifier = Modifier.size(35.dp)
                             )
                         }
-//                        IconButton(onClick = { }) {
-//                            Image(
-//                                painter = painterResource(id = R.drawable.baseline_post_add_24),
-//                                contentDescription = null,
-//                                modifier = Modifier.size(35.dp)
-//                            )
-//                        }
                     }
                 }
             )
@@ -496,33 +487,6 @@ fun HomeBoardTitle(icon: Int, boardtitle: String, onClicked: () -> Unit) {
         }
     }
 }
-
-//@Composable
-//@OptIn(ExperimentalMaterial3Api::class)
-//fun NewBoardScreen() {
-//    var name by remember { mutableStateOf("") }
-//    val nanumbarngothic = FontFamily(
-//        Font(R.font.nanumbarungothic, FontWeight.Normal, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicbold, FontWeight.Bold, FontStyle.Normal),
-//        Font(R.font.nanumbarungothiclight, FontWeight.Light, FontStyle.Normal),
-//        Font(R.font.nanumbarungothicultralight, FontWeight.Thin, FontStyle.Normal)
-//    )
-//    Column {
-//        TextField(
-//            value = name,
-//            onValueChange = { name = it },
-//            label = { Text(text = "새로운 게시판 이름") },
-//            placeholder = { Text(text = "") }
-//        )
-//        Button(onClick = {
-//            val newBoardIcon = R.drawable.baseline_insert_drive_file_24
-//            val newBoardTitle = name
-//            val newBoard = Pair(newBoardIcon, newBoardTitle)
-//        }) {
-//            Text(text = "생성")
-//        }
-//    }
-//}
 
 @Composable
 fun HomeTitle(categorytitle: String, fontFamily: FontFamily) {
@@ -684,12 +648,6 @@ fun startTimer(onTick: (Int) -> Unit) {
         }
     }
 }
-
-//fun resumeTimer() {
-//    startTimer { updatedValue ->
-//        currentSeconds = updatedValue
-//    }
-//}
 
 fun stopTimer() {
     timer?.cancel()
