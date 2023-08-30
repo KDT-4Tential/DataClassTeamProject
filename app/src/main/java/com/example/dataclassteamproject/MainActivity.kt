@@ -143,69 +143,12 @@ import java.util.Locale
 import java.util.Timer
 import kotlin.concurrent.scheduleAtFixedRate
 
-fun saveUserStatusToFirestore(userId: String, status: String) {
-    val db = FirebaseFirestore.getInstance()
-    val userStatus = hashMapOf("status" to status)
-    db.collection("users").document(userId).set(userStatus)
-        .addOnSuccessListener {
-            Log.d("Firestore", "User status successfully written!")
-        }
-        .addOnFailureListener { e ->
-            Log.w("Firestore", "Error writing user status", e)
-        }
-}
-
-fun getUserStatusFromFirestore(userId: String, onStatusFetched: (String) -> Unit) {
-    val db = FirebaseFirestore.getInstance()
-    val docRef = db.collection("users").document(userId)
-    docRef.get()
-        .addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                val status = document.getString("status") ?: "미팅 중"
-                onStatusFetched(status)
-            } else {
-                Log.d("Firestore", "No such document")
-            }
-        }
-        .addOnFailureListener { e ->
-            Log.w("Firestore", "Error getting user status", e)
-        }
-}
 
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var mAuth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
-
-    private val pickImageRequestCode = 101
-    var _imageBitmap: MutableState<ImageBitmap?> = mutableStateOf(null)
-
-    private val pickImageLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val selectedImageUri = result.data?.data
-                val rotationAngle = getRotationAngle(selectedImageUri!!)
-                val androidBitmap =
-                    MediaStore.Images.Media.getBitmap(this.contentResolver, selectedImageUri)
-                val rotatedBitmap = androidBitmap.rotate(rotationAngle)
-                _imageBitmap.value = rotatedBitmap.asImageBitmap()
-            }
-        }
-
-    // 이미지 회전 각도를 얻는 함수 추가
-    private fun getRotationAngle(uri: Uri): Int {
-        // 여기서 URI를 사용하여 회전 각도를 반환하는 로직을 작성하세요
-        // 예: MediaStore에서 EXIF 메타데이터를 사용하여 회전 각도 얻기
-        return 0 // 임시로 0 반환
-    }
-
-    // 비트맵 이미지 회전 함수 추가
-    private fun Bitmap.rotate(angle: Int): Bitmap {
-        val matrix = Matrix()
-        matrix.postRotate(angle.toFloat())
-        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -219,7 +162,6 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-//        FirebaseApp.initializeApp(this)
         setContent {
 
             DataClassTeamProjectTheme {
@@ -276,8 +218,6 @@ class MainActivity : ComponentActivity() {
                         PersonalInfoScreen(
                             navController,
                             onClicked = { signOut(navController) },
-                            _imageBitmap = _imageBitmap,
-                            onPickImage = { }
                         )
                     }
                     BoardViewsScreens(navController, mAuth)
@@ -375,6 +315,7 @@ private fun NavGraphBuilder.BoardViewsScreens(navController: NavHostController, 
         MakeBoardScreen(navController, mAuth, "idontknow")
     }
 }
+
 @Composable
 fun GoogleSignInButton(
     signInClicked: () -> Unit
@@ -423,7 +364,7 @@ fun HomeScreen(navController: NavController) {
                                 modifier = Modifier.size(35.dp)
                             )
                         }
-                        IconButton(onClick = {  }) {
+                        IconButton(onClick = { }) {
                             Image(
                                 painter = painterResource(id = R.drawable.baseline_post_add_24),
                                 contentDescription = null,
@@ -1387,13 +1328,8 @@ fun getMemoFromFirebase(date: LocalDate, callback: (String) -> Unit) {
 fun PersonalInfoScreen(
     navController: NavController,
     onClicked: () -> Unit,
-    _imageBitmap: MutableState<ImageBitmap?>,
-    onPickImage: () -> Unit
 ) {
-    val imageSizeDp = 100.dp
     val currentUser = FirebaseAuth.getInstance().currentUser
-    val onImageIconClick = { onPickImage() }
-
 
     // 상태 관련 변수들 추가
     var selectedStatus by remember { mutableStateOf("미팅 중") }
@@ -1411,119 +1347,135 @@ fun PersonalInfoScreen(
         topBar = { MyTopBar("개인정보") }, // MyTopBar는 @Composable 함수여야 합니다.
         bottomBar = { MyBottomBar(navController) } // MyBottomBara도 @Composable 함수여야 합니다.
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.CenterStart
         ) {
-            if (_imageBitmap.value != null) {
-                Image(
-                    bitmap = _imageBitmap.value!!,
-                    contentDescription = "User profile picture",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { onImageIconClick() }
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Default user icon",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { onImageIconClick() }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = currentUser?.displayName ?: "",
-                onValueChange = {},
-                label = { Text("Name") },
-                enabled = false
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = currentUser?.email ?: "",
-                onValueChange = {},
-                label = { Text("E-mail") },
-                enabled = false
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 2. 상태 설정을 위한 OutlinedTextField와 DropdownMenu 추가
-
-
-            OutlinedTextField(
-                value = selectedStatus,
-                onValueChange = { /* 여기서는 값 변경을 허용하지 않음 */ },
-                label = { Text("상태") },
-                trailingIcon = {
-                    IconButton(onClick = { showDropdown = true }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null
-                        )
-                    }
-                },
-                enabled = false,
-                modifier = Modifier.focusable(enabled = false)
-            )
-
-            DropdownMenu(
-                expanded = showDropdown,
-                onDismissRequest = { showDropdown = false }
-            ) {
-                for (option in statusOptions) {
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            selectedStatus = option
-                            val userId = FirebaseAuth.getInstance().currentUser?.uid
-                            if (userId != null) {
-                                saveUserStatusToFirestore(userId, selectedStatus)
-                            }
-                            showDropdown = false
-                        }
-                    )
-                }
-            }
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) { }
 
             Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column {
-                    Text(text = "로그아웃", modifier = Modifier.clickable { onClicked() })
+                AsyncImage(
+                    model = currentUser?.photoUrl,
+                    contentDescription = "profile 사진",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                )
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = currentUser?.displayName ?: "",
+                    onValueChange = {},
+                    label = { Text("Name") },
+                    enabled = false
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = currentUser?.email ?: "",
+                    onValueChange = {},
+                    label = { Text("E-mail") },
+                    enabled = false
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 2. 상태 설정을 위한 OutlinedTextField와 DropdownMenu 추가
+
+
+                OutlinedTextField(
+                    value = selectedStatus,
+                    onValueChange = { /* 여기서는 값 변경을 허용하지 않음 */ },
+                    label = { Text("상태") },
+                    trailingIcon = {
+                        IconButton(onClick = { showDropdown = true }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    enabled = false,
+                    modifier = Modifier.focusable(enabled = false)
+                )
+
+                DropdownMenu(
+                    expanded = showDropdown,
+                    onDismissRequest = { showDropdown = false }
+                ) {
+                    for (option in statusOptions) {
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                selectedStatus = option
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                if (userId != null) {
+                                    saveUserStatusToFirestore(userId, selectedStatus)
+                                }
+                                showDropdown = false
+                            }
+                        )
+                    }
+                }
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(modifier = Modifier
+                    .clickable { onClicked() }
+                    .background(color = Color(0xff75d1ff), shape = RoundedCornerShape(8.dp))
+                    .size(width = 100.dp, height = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "로그아웃", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
 
+fun saveUserStatusToFirestore(userId: String, status: String) {
+    val db = FirebaseFirestore.getInstance()
+    val userStatus = hashMapOf("status" to status)
+    db.collection("users").document(userId).set(userStatus)
+        .addOnSuccessListener {
+            Log.d("Firestore", "User status successfully written!")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error writing user status", e)
+        }
+}
+
+fun getUserStatusFromFirestore(userId: String, onStatusFetched: (String) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    val docRef = db.collection("users").document(userId)
+    docRef.get()
+        .addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                val status = document.getString("status") ?: "미팅 중"
+                onStatusFetched(status)
+            } else {
+                Log.d("Firestore", "No such document")
+            }
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error getting user status", e)
+        }
+}
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun MyTopBar(topBarTitle: String) {
     TopAppBar(
-        title = { Text(text = topBarTitle) },
+        title = { Text(text = topBarTitle, color = Color.White, fontWeight = FontWeight.Bold) },
         //탑바 색바꾸기
         colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color(0xff75D1FF))
     )
@@ -1608,7 +1560,7 @@ private fun MyBottomBar(navController: NavController) {
 }
 
 data class ChatMessage(
-    val message: String? = "메시지 오류",
+    val message: String? = null,
     val userId: String? = "UID 오류",
     val userName: String? = "이름 오류",
     val uploadDate: String? = "",
@@ -1634,7 +1586,7 @@ private fun ChattingScreen(navController: NavController, mAuth: FirebaseAuth, ch
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             uri?.let {
-                uploadChatImage(chatName, it, mAuth,
+                uploadChatImage(chatmessage, chatName, it, mAuth,
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
@@ -1871,7 +1823,7 @@ fun loadChatMessages(chatName: String, listener: (List<ChatMessage>) -> Unit) {
     })
 }
 
-fun uploadChatImage(chatName: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
+fun uploadChatImage(chatmessage: String, chatName: String, uri: Uri, mAuth: FirebaseAuth, onImageUploaded: (String) -> Unit) {
     val storage = FirebaseStorage.getInstance()
     val storageRef = storage.reference
     val user = mAuth.currentUser
@@ -1884,6 +1836,7 @@ fun uploadChatImage(chatName: String, uri: Uri, mAuth: FirebaseAuth, onImageUplo
                 val imageUrl = downloadUri.toString()
                 val currentDate = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 val chatMessage = ChatMessage(
+                    message = chatmessage,
                     userId = user?.uid,
                     userName = user?.displayName,
                     uploadDate = currentDate,
@@ -1929,7 +1882,7 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth, postName:
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             uri?.let {
-                uploadPostImage(title, content, postName,it, mAuth,
+                uploadPostImage(title, content, postName, it, mAuth,
                     onImageUploaded = { imageUrl ->
                         uploadedImageUrl = imageUrl
                     })
@@ -2031,7 +1984,7 @@ fun MakeBoardScreen(navController: NavController, mAuth: FirebaseAuth, postName:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BoardViewScreen(navController: NavController,postName: String, makeBoardRoute: String, postTitle: String) {
+fun BoardViewScreen(navController: NavController, postName: String, makeBoardRoute: String, postTitle: String) {
 
     var postList by remember { mutableStateOf(listOf<Post>()) }
 
